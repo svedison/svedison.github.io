@@ -1,0 +1,188 @@
+/* Easter eggs: typed-word flash, the moon poem, dry-weather caption, CSO lantern caption. Owned by src/ui/eggs.ts. */
+
+/* 1. Typed-word flash: one calligraphic glyph, breathed in and out like ink on wet paper. */
+.egg-flash {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  font-family: var(--font-seal);
+  font-size: clamp(120px, 24vw, 280px);
+  line-height: 1;
+  color: var(--egg-color, var(--lantern));
+  text-shadow: 0 0 32px color-mix(in srgb, var(--egg-color, var(--lantern)) 28%, transparent);
+  opacity: 0;
+}
+.egg-flash.is-on { animation: egg-ink 1.6s var(--ease-out) forwards; }
+@keyframes egg-ink {
+  0% { opacity: 0; transform: scale(0.97); filter: blur(8px); }
+  28% { opacity: 0.92; transform: scale(1); filter: blur(0); }
+  70% { opacity: 0.8; filter: blur(0); }
+  100% { opacity: 0; transform: scale(1.02); filter: blur(4px); }
+}
+.is-reduced .egg-flash.is-on { animation: egg-fade 1.6s linear forwards; }
+@keyframes egg-fade { 0% { opacity: 0; } 20%, 70% { opacity: 0.9; } 100% { opacity: 0; } }
+
+/* 2. The moon. Vertical couplet on the right, translation and the time on the left. */
+.egg-moon {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) var(--gutter) max(24px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(60% 50% at 72% 30%, rgba(243, 237, 226, 0.07), transparent 70%),
+    radial-gradient(120% 90% at 50% 100%, rgba(11, 26, 42, 0.96), rgba(6, 13, 22, 0.94));
+  color: var(--paper);
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out);
+  cursor: pointer;
+  overflow: auto;
+}
+.egg-moon[hidden] { display: none; }
+.egg-moon.is-open { opacity: 1; }
+
+.egg-moon__disc {
+  position: absolute;
+  top: 12vh;
+  right: 16vw;
+  width: clamp(56px, 7vw, 96px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 40%, #fbf6ea, #e9dfc8 60%, #d8ccb0);
+  box-shadow: 0 0 60px 18px rgba(243, 237, 226, 0.12);
+  opacity: 0.85;
+}
+
+.egg-moon__inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 30ch) auto;
+  grid-template-rows: 1fr auto auto auto auto;
+  grid-template-areas:
+    '. zh'
+    'en zh'
+    'cite zh'
+    'now zh'
+    'close zh';
+  align-items: end;
+  column-gap: clamp(40px, 7vw, 112px);
+  row-gap: 20px;
+  max-width: 980px;
+  cursor: default;
+}
+.egg-moon__poem { display: contents; margin: 0; }
+
+.egg-moon__zh {
+  grid-area: zh;
+  margin: 0;
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 0.55em;
+  font-family: var(--font-cjk);
+  font-weight: 600;
+  font-size: clamp(34px, 4.2vw, 54px);
+  line-height: 1.3;
+  letter-spacing: 0.2em;
+  color: var(--paper);
+}
+.egg-moon__col { writing-mode: vertical-rl; text-orientation: upright; }
+.egg-moon__col:nth-child(2) { margin-top: 2.2em; color: color-mix(in srgb, var(--paper) 86%, var(--lantern)); }
+
+.egg-moon__en {
+  grid-area: en;
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.4;
+  text-wrap: pretty;
+}
+.egg-moon__cite {
+  grid-area: cite;
+  margin-top: -6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--rain-silver);
+}
+.egg-moon__now {
+  grid-area: now;
+  margin: 28px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(243, 237, 226, 0.18);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--lantern);
+}
+.egg-moon__close {
+  grid-area: close;
+  justify-self: start;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--rain-silver);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.egg-moon__close:hover { color: var(--paper); }
+.egg-moon__close:focus-visible { outline: 2px solid var(--lantern); outline-offset: 3px; }
+
+@media (max-width: 640px) {
+  .egg-moon__inner {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: 'zh' 'en' 'cite' 'now' 'close';
+    row-gap: 16px;
+  }
+  .egg-moon__zh { justify-content: center; font-size: 34px; margin-bottom: 8px; }
+  .egg-moon__en { font-size: 20px; }
+  .egg-moon__now { margin-top: 12px; font-size: 16px; }
+  .egg-moon__disc { top: 7vh; right: 10vw; }
+}
+
+/* 3. Dry Seattle: a quiet mono aside under the rain chapter copy. */
+.egg-dry {
+  margin: 18px 0 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--rain-silver);
+}
+
+/* 4. CSO lanterns: the real fact, once, above the journey track. */
+.egg-lanterns {
+  position: fixed;
+  left: 50%;
+  bottom: calc(104px + env(safe-area-inset-bottom));
+  z-index: 30;
+  margin: 0;
+  padding: 7px 12px;
+  transform: translate(-50%, 6px);
+  background: rgba(28, 27, 25, 0.62);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--paper);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s var(--ease-out), transform 0.6s var(--ease-out);
+}
+.egg-lanterns[hidden] { display: none; }
+.egg-lanterns.is-on { opacity: 1; transform: translate(-50%, 0); }
+.egg-lanterns::before { content: ''; display: inline-block; width: 6px; height: 6px; margin-right: 9px; border-radius: 50%; background: var(--lantern); vertical-align: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .egg-moon, .egg-lanterns { transition: none; }
+  .egg-lanterns { transform: translate(-50%, 0); }
+}

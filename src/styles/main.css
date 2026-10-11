@@ -1,0 +1,1991 @@
+@import './tokens.css';
+/* The Long Way Here: page shell, story typography, HUD and poster fallbacks (SPEC §5, §8, §11).
+   Layers: #world 0 → #veil 1 → #story 2 → #ui-root 10+. Text tone follows html[data-tone] (set by the engine;
+   in poster mode by hud.ts), and every copy block carries its own LOCAL scrim, never a full-screen blanket. */
+
+/* ------------------------------------------------------------------ base */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: auto;
+  overflow-x: clip;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* tone: 'dark' = dark text on a light scene (default), 'light' = light text on a dark scene */
+  --fg: var(--ink);
+  --fg-2: rgba(28, 27, 25, 0.78);
+  --fg-3: rgba(28, 27, 25, 0.58);
+  --rule: rgba(28, 27, 25, 0.28);
+  --scrim: rgba(243, 237, 226, 0.58);
+  --scrim-edge: rgba(243, 237, 226, 0);
+  --shadow: rgba(243, 237, 226, 0.5);
+  --hud-wash: rgba(243, 237, 226, 0.9);
+  --track-wash: rgba(243, 237, 226, 0.8);
+}
+html[data-tone='light'] {
+  --fg: var(--paper);
+  --fg-2: rgba(243, 237, 226, 0.84);
+  --fg-3: rgba(243, 237, 226, 0.64);
+  --rule: rgba(243, 237, 226, 0.3);
+  --scrim: rgba(10, 13, 17, 0.5);
+  --scrim-edge: rgba(10, 13, 17, 0);
+  --shadow: rgba(8, 10, 12, 0.6);
+  --hud-wash: rgba(10, 13, 17, 0.7);
+  --track-wash: rgba(10, 13, 17, 0.6);
+}
+body {
+  margin: 0;
+  min-height: 100%;
+  background: var(--dusk);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.6;
+  font-optical-sizing: auto;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+  transition: color 600ms var(--ease-out);
+}
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+a {
+  color: inherit;
+}
+button {
+  font: inherit;
+  color: inherit;
+}
+.mono {
+  font-family: var(--font-mono);
+}
+.sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+::selection {
+  background: var(--lantern);
+  color: var(--ink);
+}
+:focus-visible {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+.skip-link {
+  position: fixed;
+  left: 16px;
+  top: -100px;
+  z-index: 100;
+  background: var(--paper);
+  color: var(--ink);
+  padding: 12px 16px;
+  font: 500 14px/1.2 var(--font-mono);
+  text-decoration: none;
+  border-radius: 2px;
+}
+.skip-link:focus {
+  top: max(12px, env(safe-area-inset-top));
+}
+
+/* ------------------------------------------------------------------ layers */
+#world {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100lvh;
+  display: block;
+  z-index: var(--z-world);
+}
+#veil {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: var(--z-veil);
+}
+#story {
+  position: relative;
+  z-index: var(--z-story);
+}
+#ui-root {
+  position: relative;
+  z-index: var(--z-ui);
+}
+html.no-webgl #world,
+html:not(.js) #world {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ chapters */
+.chapter {
+  position: relative;
+  min-height: calc(var(--weight, 1) * 100svh);
+  --hold: 1;
+}
+/* How long (in viewports) the reading block holds still before releasing to the world. */
+.chapter--prologue { --hold: 1.4; }
+.chapter--river { --hold: 1.6; }
+.chapter--crossing { --hold: 1.6; }
+.chapter--coast { --hold: 1; }
+.chapter--rain { --hold: 1.5; }
+.chapter--workshop { --hold: 2.8; }
+.chapter--loop { --hold: 1.6; }
+.chapter--next { --hold: 1; }
+
+.chapter__hold {
+  position: relative;
+  height: calc(var(--hold) * 100svh);
+}
+.chapter__pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr) auto;
+  column-gap: clamp(12px, 2vw, 32px);
+  padding: calc(var(--hud-top) + 16px) var(--gutter) calc(var(--track-h) + 28px);
+  pointer-events: none;
+}
+.chapter__pin > * {
+  pointer-events: auto;
+  grid-row: 1;
+}
+
+/* ---- the stage (JS): every chapter's reading block is a fixed layer, crossfaded by exact scroll position
+   in reveal.ts, so copy holds perfectly still while the camera moves. The section only reserves scroll. */
+html.js .chapter:not(.chapter--next) .chapter__pin {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100svh;
+  opacity: 0;
+}
+html.js .chapter--prologue .chapter__pin {
+  opacity: 1;
+}
+html.js .chapter__pin:not(.is-active) > * {
+  pointer-events: none;
+}
+html.js .chapter__copy .coords {
+  /* the HUD carries the coordinates when JS runs */
+  display: none;
+}
+.chapter__aside--stage {
+  grid-column: 4 / span 6;
+  align-self: end;
+  justify-self: center;
+  margin: 0 0 4svh;
+  padding: 0;
+  display: block;
+  transition: opacity 900ms var(--ease-out), transform 900ms var(--ease-out);
+}
+html.js .chapter__pin:not(.is-late) .chapter__aside--stage {
+  opacity: 0;
+  transform: translateY(14px);
+}
+/* the underwater line belongs under water: crossing.ts sets html[data-dive] (above / under / dawn) from its
+   timeline. With a live world the line shows only while the lens is under; no JS / no WebGL keep the static reveal */
+html.js:not(.no-webgl):not([data-dive='under']) .chapter--crossing .chapter__aside--stage {
+  opacity: 0;
+  transform: translateY(14px);
+}
+/* it can land over a bright frame (god-ray core, the poster): same blurred local scrim as the reading block */
+.chapter--crossing .chapter__aside--stage p {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 0 24px rgba(0, 0, 0, 0.6);
+}
+.chapter--crossing .chapter__aside--stage p::before {
+  inset: -32px -48px;
+  border-radius: 96px;
+  background: var(--scrim);
+  filter: blur(44px);
+  opacity: 0.9;
+}
+html.reduced-motion .chapter__aside--stage {
+  transform: none !important;
+}
+/* crossing: over the flat, bright dawn sky the blurred block's straight right side read as a box edge. Stretch the
+   scrim further right and fade it out with a long gradient (no mask: a mask clips the blur to the box), so it reads as the light falling off, not a panel. */
+@media (min-width: 761px) {
+  .chapter--crossing .chapter__copy::before {
+    inset: -48px -200px -48px -64px;
+    background: linear-gradient(to right, var(--scrim) 46%, transparent 100%);
+  }
+}
+/* crossing, phones: at dawn the last body line sits right above the sunlit horizon; carry the haze a little further
+   down so that line is on the same density as the first (the post pass calms the sky under it, crossing/post.ts) */
+@media (max-width: 760px) {
+  html.js:not(.no-webgl) .chapter--crossing .chapter__copy::before {
+    inset: -48px -64px -56px;
+  }
+}
+/* reduced motion: the underwater line is binary (on while under, off otherwise), never caught mid-fade */
+html.reduced-motion .chapter--crossing .chapter__aside--stage {
+  transition: none;
+}
+/* crossing, live world: a mirror whose 3D object is out of its window (no moon under water or at dawn, no fleet
+   during the dive) leaves the stage instead of greying out. It stays in the DOM and the tab order, and comes back
+   on screen while it has keyboard focus. */
+html.js:not(.no-webgl) .chapter--crossing .keep.is-dormant:not(.is-found):not(:focus-visible) {
+  position: absolute !important;
+  inline-size: 1px;
+  block-size: 1px;
+  min-block-size: 0;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+/* the sea glass in range under water: its glint row opens into the hint, the dive's one live action */
+html.js:not(.no-webgl) .chapter--crossing .keep--hidden.is-near:not(.is-found) {
+  inline-size: auto;
+  padding: 9px 16px 9px 13px;
+  gap: 12px;
+  border: 1px solid rgba(242, 169, 59, 0.7);
+  background: rgba(13, 14, 15, 0.72);
+  color: var(--paper);
+  max-inline-size: 100%;
+  flex-shrink: 1;
+}
+html.js:not(.no-webgl) .chapter--crossing .keep--hidden.is-near:not(.is-found) .keep__mark {
+  inline-size: 8px;
+  block-size: 8px;
+  opacity: 1;
+  background: var(--lantern);
+  box-shadow: 0 0 10px var(--lantern);
+}
+html.js:not(.no-webgl) .chapter--crossing .keep--hidden.is-near:not(.is-found) .keep__sr {
+  position: static !important;
+  inline-size: auto;
+  block-size: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  clip-path: none;
+  white-space: normal;
+  font: italic 400 16px/1.35 var(--font-body);
+}
+
+/* ---- the reading block */
+.chapter__copy {
+  position: relative;
+  isolation: isolate;
+  max-width: 34rem;
+  color: var(--fg);
+  text-shadow: 0 1px 18px var(--shadow);
+}
+/* local scrim: a soft haze sized to the block (never a card, never full-screen). A blurred block rather than a
+   radial so line ends sit on the same density as line starts; follows tone. */
+.chapter__copy::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -48px -64px;
+  border-radius: 120px;
+  background: var(--scrim);
+  filter: blur(52px);
+  pointer-events: none;
+  transition: background-color 600ms var(--ease-out);
+}
+
+.eyebrow {
+  margin: 0 0 18px;
+  font: 400 12px/1.4 var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  /* 12px mono over mist needs more ink than --fg-2 gives it (river 0.92: light mist behind the eyebrow row) */
+  color: color-mix(in srgb, var(--fg) 90%, transparent);
+  text-shadow: 0 0 2px var(--shadow), 0 1px 12px var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.eyebrow::before {
+  content: '';
+  width: 28px;
+  height: 1px;
+  background: var(--lantern);
+  flex: none;
+}
+
+.chapter__title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-variation-settings: 'opsz' 72;
+  font-size: clamp(2.35rem, 5.2vw, 4.75rem);
+  line-height: 1.02;
+  letter-spacing: -0.018em;
+  text-wrap: balance;
+  max-width: 13ch;
+}
+h1.chapter__title {
+  font-size: clamp(3.1rem, 9.2vw, 8.6rem);
+  line-height: 0.94;
+  letter-spacing: -0.028em;
+  max-width: 9ch;
+}
+.chapter__body {
+  margin: 22px 0 0;
+  font-size: clamp(18px, 1.3vw, 20px);
+  line-height: 1.6;
+  color: var(--fg);
+  max-width: 36ch;
+  text-wrap: pretty;
+}
+.coords {
+  margin: 22px 0 0;
+  font: 400 11.5px/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--fg-3);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- the seal: calligraphic, large, sparse */
+.seal {
+  margin: 0;
+  font-family: var(--font-seal);
+  font-weight: 400;
+  line-height: 1;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 0.04em;
+  color: var(--fg);
+  opacity: 0.86;
+  font-size: clamp(88px, 13vw, 210px);
+  pointer-events: none !important;
+  user-select: none;
+  /* a tight edge, not a halo: a wide glow smudges over dark walls */
+  text-shadow: 0 1px 3px var(--shadow);
+  position: relative;
+  isolation: isolate;
+}
+/* a local mist pad behind the glyphs, so the seal still reads over busy roofs and dark house fronts
+   (river): soft-edged, tone-following, never a card */
+.seal::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -14% -22%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--scrim) 0%, var(--scrim) 28%, var(--scrim-edge) 100%);
+  pointer-events: none;
+}
+.seal__glyphs {
+  display: block;
+}
+
+/* Prologue hero (WebGL): the copy sits on open water and the seal on open sky, so neither wants a plate. The copy
+   haze is one feathered ellipse (no box edge anywhere), and the seal carries only a soft halo in the scrim colour. */
+html.js:not(.no-webgl) .chapter--prologue .chapter__copy::before {
+  inset: -30% -34% -24% -40%;
+  border-radius: 0;
+  filter: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--scrim) 72%, transparent) 0%, color-mix(in srgb, var(--scrim) 58%, transparent) 42%, var(--scrim-edge) 100%);
+  transition: none;
+}
+html.js:not(.no-webgl) .chapter--prologue .seal::before {
+  display: none;
+}
+/* The quiet CTA sits at the bottom edge of that ellipse, over open water whose brightness follows the visitor's
+   hour; a small feathered pad in the scrim colour keeps "Skip to Logbook" at >= 4.5:1 in either tone. */
+html.js:not(.no-webgl) .chapter--prologue .cta--quiet {
+  position: relative;
+  isolation: isolate;
+}
+html.js:not(.no-webgl) .chapter--prologue .cta--quiet::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -16px -52px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--scrim) 90%, transparent) 0%, color-mix(in srgb, var(--scrim) 62%, transparent) 50%, var(--scrim-edge) 100%);
+  pointer-events: none;
+}
+/* Twilight (jiangyin.ts sets html[data-jy-dusk] while the haze sits between lit mist and night): the water under the
+   copy is mid-grey, where neither ink nor paper clears 4.5:1 on its own, so the copy haze thickens (a second layer
+   of the same feathered gradient, no new shape). */
+html.js[data-jy-dusk]:not(.no-webgl) .chapter--prologue .chapter__copy::before {
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--scrim) 60%, transparent) 0%, color-mix(in srgb, var(--scrim) 48%, transparent) 42%, var(--scrim-edge) 100%),
+    radial-gradient(closest-side, color-mix(in srgb, var(--scrim) 72%, transparent) 0%, color-mix(in srgb, var(--scrim) 58%, transparent) 42%, var(--scrim-edge) 100%);
+}
+/* Portrait: the copy sits low, over the near water, which mirrors the dark bank and stays far darker than the haze
+   that picks the tone, at every hour. The copy haze is the same feathered ellipse, two layers deep from the centre
+   out, so ink copy holds >= 4.5:1 there too (paper copy only gets a deeper shade). */
+@media (max-width: 760px) {
+  html.js:not(.no-webgl) .chapter--prologue .chapter__copy::before,
+  html.js[data-jy-dusk]:not(.no-webgl) .chapter--prologue .chapter__copy::before {
+    inset: -18% -30% -14% -30%;
+    background: radial-gradient(closest-side, var(--scrim) 0%, color-mix(in srgb, var(--scrim) 86%, transparent) 55%, var(--scrim-edge) 100%),
+      radial-gradient(closest-side, var(--scrim) 0%, color-mix(in srgb, var(--scrim) 70%, transparent) 55%, var(--scrim-edge) 100%);
+  }
+}
+/* Coast (WebGL, mobile): the world already lays a warm paper band under the copy (coast/post.ts). The copy haze
+   uses the same warm paper and a long feather, so the evening scene dissolves into the page, not into grey. */
+@media (max-width: 760px) {
+  html.js:not(.no-webgl) .chapter--coast .chapter__copy::before {
+    inset: -72px -16px -28px;
+    background: rgba(246, 228, 206, 0.5);
+    filter: blur(36px);
+  }
+}
+/* Coast without WebGL / without JS (mobile): the painted poster gets the same warm paper wash under the copy,
+   not the neutral scrim (which went grey-brown over the apricot poster). */
+@media (max-width: 760px) {
+  html.no-webgl .chapter--coast .chapter__copy::before,
+  html:not(.js) .chapter--coast .chapter__copy::before {
+    inset: -56px -16px -28px;
+    background: rgba(246, 228, 206, 0.74);
+    filter: blur(30px);
+  }
+}
+html.js:not(.no-webgl) .chapter--prologue .seal {
+  text-shadow: 0 0 2px var(--shadow), 0 0 26px var(--scrim);
+}
+/* River (WebGL): 爱 belongs to the open river; once the canal walls own the frame (jiangyin.ts sets
+   html[data-jy-walls]) it lifts away instead of landing on timber and eave slashes. */
+html.js .chapter--river .seal {
+  transition: opacity 900ms var(--ease-out);
+}
+html.js[data-jy-walls]:not(.no-webgl) .chapter--river .seal {
+  opacity: 0;
+}
+/* The river poster (no WebGL, no JS, or the still shown while the set loads) is the canal frame itself: timber
+   fronts and eaves wherever 爱 could stand, so the glyph and its pad stand down there, as they do once the canal
+   walls own the live frame (the seal's sr-only label stays in the reading order). */
+:is(html.no-webgl, html:not(.js), html.js:has(#posters[style*='display: block'])) .chapter--river .seal::before {
+  display: none;
+}
+:is(html.no-webgl, html:not(.js), html.js:has(#posters[style*='display: block'])) .chapter--river .seal__glyphs {
+  /* !important: ui/reveal.ts tweens the glyphs with GSAP autoAlpha, which writes an inline visibility */
+  visibility: hidden !important;
+}
+/* Portrait, live river: the bank's roofs fill the right of the frame (where every other seal sits) and the open
+   Yangtze the left, so 爱 moves to the open side and steps down a size. */
+@media (max-width: 760px) {
+  html.js:not(.no-webgl) .chapter--river .seal {
+    justify-self: start !important;
+    font-size: clamp(52px, 15vw, 66px);
+  }
+  html.js:not(.no-webgl) .chapter--river .seal::before {
+    display: none;
+  }
+}
+
+/* ---- authored placements (12-col grid inside the pinned viewport) */
+[data-place='hero'] .chapter__copy { grid-column: 1 / span 8; align-self: end; max-width: 46rem; }
+[data-place='hero'] .seal { grid-column: 11 / span 2; justify-self: end; align-self: start; margin-top: 2vh; }
+
+[data-place='right-low'] .chapter__copy { grid-column: 8 / span 5; align-self: end; }
+[data-place='right-low'] .seal { grid-column: 1 / span 2; align-self: start; justify-self: start; margin-top: 4vh; }
+
+[data-place='left-high'] .chapter__copy { grid-column: 1 / span 6; align-self: start; margin-top: 4vh; }
+[data-place='left-high'] .seal { grid-column: 11 / span 2; justify-self: end; align-self: end; }
+
+[data-place='right-mid'] .chapter__copy { grid-column: 7 / span 6; align-self: center; justify-self: end; }
+[data-place='right-mid'] .seal { grid-column: 1 / span 3; align-self: end; justify-self: start; }
+
+[data-place='left-low'] .chapter__copy { grid-column: 1 / span 6; align-self: end; }
+[data-place='left-low'] .seal { grid-column: 10 / span 3; justify-self: end; align-self: start; margin-top: 2vh; }
+
+[data-place='center'] .chapter__copy { grid-column: 3 / span 8; align-self: center; justify-self: center; text-align: center; max-width: 44rem; }
+[data-place='center'] .eyebrow { justify-content: center; }
+[data-place='center'] .chapter__title { margin-inline: auto; max-width: none; }
+
+[data-place='left-mid'] .chapter__copy { grid-column: 1 / span 7; align-self: center; }
+
+/* keepsake mirrors sit opposite a high copy block */
+[data-place='left-high'] > .slot--hotspots { grid-column: 7 / -1 !important; grid-row: 1 !important; align-self: end; justify-self: stretch; justify-content: flex-end; }
+/* Workshop: the shelf index sits under the copy, left, so the 3D shelf keeps the centre and right */
+.chapter--workshop [data-place='left-high'] > .slot--hotspots { grid-column: 1 / span 7 !important; grid-row: 2 !important; justify-content: flex-start; }
+[data-place='right-mid'] > .slot--hotspots { grid-column: 1 / span 6 !important; }
+
+/* The loop manifesto reads like a spoken line */
+.chapter--loop .chapter__body {
+  font-size: clamp(22px, 2.3vw, 34px);
+  line-height: 1.42;
+  max-width: 30ch;
+  margin-inline: auto;
+  margin-top: 28px;
+  font-variation-settings: 'opsz' 36;
+}
+.chapter--loop .chapter__title {
+  font-size: clamp(2rem, 4.2vw, 3.6rem);
+}
+
+/* ---- trailing in-flow content (the forgive line + ritual, the loop ring, the tally + colophon) */
+.chapter__tail {
+  position: relative;
+  min-height: max(0px, calc((var(--weight, 1) - var(--hold, 1)) * 100svh));
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.chapter__tail:not(:has(> *)) {
+  display: none;
+}
+.chapter--next .chapter__tail {
+  justify-content: flex-end;
+}
+
+/* ---- asides: later beats inside a chapter (underwater line, the forgive line) */
+.chapter__aside {
+  position: relative;
+  padding: 0 var(--gutter);
+  margin: 10svh 0;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+.chapter__aside p {
+  grid-column: 4 / span 6;
+  margin: 0;
+  position: relative;
+  isolation: isolate;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(24px, 2.6vw, 38px);
+  line-height: 1.3;
+  font-variation-settings: 'opsz' 36;
+  text-align: center;
+  text-wrap: balance;
+  text-shadow: 0 1px 18px var(--shadow);
+}
+.chapter__aside p::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -40% -14%;
+  background: radial-gradient(closest-side, var(--scrim) 0%, var(--scrim-edge) 100%);
+  opacity: 0.8;
+}
+.chapter--rain .chapter__aside p { grid-column: 2 / span 6; text-align: left; }
+
+/* ---- slots other agents fill */
+.slot:empty {
+  display: none;
+}
+.slot--forgive,
+.slot--loop {
+  position: relative;
+  padding: 0 var(--gutter);
+  margin-bottom: 14svh;
+}
+.slot--tally {
+  position: relative;
+  padding: 0 var(--gutter);
+  margin: 0 0 8svh;
+}
+.slot--hotspots {
+  /* DOM mirrors of the 3D hotspots: sticky to the bottom edge while the chapter is on screen */
+  position: sticky;
+  bottom: calc(var(--track-h) + 12px);
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 var(--gutter);
+  margin-top: 0;
+  pointer-events: none;
+}
+.slot--hotspots > * {
+  pointer-events: auto;
+}
+.chapter__pin > .slot--hotspots {
+  /* Hotspot mirrors render inside the pinned viewport, under the copy */
+  position: static;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  align-self: end;
+  padding: 0;
+  margin-top: 16px;
+}
+
+/* ---- no-JS keepsakes (static.ts): every keepsake story as a native <details> card in the hotspots slot.
+   With JS, ui/hotspots.ts builds the live buttons here instead, so the static cards never double up. */
+html.js [data-static-keepsake] {
+  display: none !important;
+}
+.keeps-static {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 12px;
+  max-inline-size: 46rem;
+}
+.keepsake-static {
+  --ks-bg: rgba(243, 237, 226, 0.84);
+  --ks-fg: var(--ink);
+  --ks-edge: rgba(28, 27, 25, 0.24);
+  flex: 0 1 auto;
+  max-inline-size: 30rem;
+  border: 1px solid var(--ks-edge);
+  border-radius: 3px;
+  background: var(--ks-bg);
+  color: var(--ks-fg);
+  text-shadow: none;
+}
+:is(.chapter--prologue, .chapter--crossing, .chapter--rain, .chapter--workshop) .keepsake-static {
+  --ks-bg: rgba(13, 14, 15, 0.64);
+  --ks-fg: var(--paper);
+  --ks-edge: rgba(243, 237, 226, 0.26);
+}
+.keepsake-static summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-block-size: 44px;
+  padding: 9px 16px 9px 13px;
+  font: italic 400 16px/1.35 var(--font-body);
+  cursor: pointer;
+  list-style: none;
+}
+.keepsake-static summary::-webkit-details-marker {
+  display: none;
+}
+.keepsake-static summary:focus-visible {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+}
+/* the same ink-stamp glyph as the live mirrors (ui/glyphs.ts) */
+.keepsake-static__mark {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 22px;
+  block-size: 22px;
+  flex: none;
+  opacity: 0.85;
+}
+.keepsake-static__mark svg {
+  inline-size: 20px;
+  block-size: 20px;
+}
+.keepsake-static details[open] .keepsake-static__mark {
+  color: var(--lantern);
+  opacity: 1;
+}
+.keepsake-static details[open] summary {
+  font-style: normal;
+}
+.keepsake-static p {
+  margin: 0;
+  padding: 0 16px 14px 35px;
+  font-size: 16px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+.keepsake-static__by {
+  font: 400 11.5px/1.6 var(--font-mono);
+  letter-spacing: 0.04em;
+  opacity: 0.8;
+}
+
+/* ---- CTAs */
+.cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 22px;
+  margin-top: 30px;
+}
+[data-place='center'] .cta-row { justify-content: center; }
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 22px;
+  border-radius: 999px;
+  font: 500 15px/1 var(--font-body);
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  text-shadow: none;
+  transition: background-color var(--dur-ui) var(--ease-out), color var(--dur-ui) var(--ease-out),
+    border-color var(--dur-ui) var(--ease-out), transform var(--dur-ui) var(--ease-out);
+}
+.cta--primary {
+  background: var(--lantern);
+  color: var(--ink);
+  font-size: 16px;
+}
+.cta--primary:hover {
+  background: #f6bb5e;
+}
+.cta--primary:active {
+  transform: translateY(1px);
+}
+.cta__arrow {
+  font-family: var(--font-mono);
+  transition: transform var(--dur-ui) var(--ease-out);
+}
+.cta--primary:hover .cta__arrow {
+  transform: translateY(3px);
+}
+.cta--quiet {
+  padding: 0 4px;
+  min-height: 44px;
+  border-radius: 0;
+  color: var(--fg);
+  background: none;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 6px;
+  text-decoration-thickness: 1px;
+}
+.cta--quiet:hover {
+  text-decoration-color: var(--lantern);
+}
+
+/* ---- next shore */
+.shore__now {
+  margin: 26px 0 0;
+  max-width: 30ch;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.35;
+  font-variation-settings: 'opsz' 36;
+  text-wrap: balance;
+}
+.shore__dates {
+  margin: 18px 0 0;
+  font: 400 12px/1.5 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--fg-2);
+}
+.shore__links {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 22px;
+}
+.shore__links a,
+.shore__mail a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 6px;
+  text-decoration-thickness: 1px;
+  transition: text-decoration-color var(--dur-ui) var(--ease-out);
+}
+.shore__links a:hover,
+.shore__mail a:hover {
+  text-decoration-color: var(--lantern);
+}
+.shore__mail {
+  margin: 4px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--fg-2);
+}
+.chapter--next .chapter__hold {
+  height: auto;
+}
+.chapter--next .chapter__pin {
+  position: relative;
+  height: auto;
+  padding-top: 10svh;
+  padding-bottom: 32px;
+}
+/* Next shore is the one in-flow chapter: its copy, tally and colophon sit together at the foot of the page,
+   so the rest state at the very bottom shows the headline, the CTA and the footer at once, with the dawn
+   scene open above them on arrival. */
+html.js .chapter--next {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+html.js .chapter--next .chapter__tail {
+  min-height: 0;
+}
+
+/* ---- colophon */
+.colophon {
+  position: relative;
+  margin: 0 var(--gutter);
+  padding: 40px 0 calc(var(--track-h) + 40px);
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 24px;
+  align-items: start;
+  font: 400 12px/1.6 var(--font-mono);
+  letter-spacing: 0.02em;
+  color: var(--fg-2);
+  text-shadow: 0 1px 14px var(--shadow);
+}
+/* a short rule over the credits only, so it never slices through the scene on the right */
+.colophon::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(100%, 44rem);
+  height: 1px;
+  background: linear-gradient(to right, var(--rule) 70%, transparent);
+}
+.colophon__mark {
+  width: 40px;
+  height: 40px;
+  color: var(--fg);
+}
+.colophon__credits {
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  max-width: 70ch;
+}
+.colophon__credits div {
+  display: grid;
+  grid-template-columns: 7ch 1fr;
+  gap: 12px;
+}
+.colophon__credits dt {
+  color: var(--fg-3);
+}
+.colophon__credits dd {
+  margin: 0;
+}
+.colophon__credits [lang^='zh'] {
+  font-family: var(--font-cjk);
+}
+.colophon__copy {
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ motion helpers (reveal.ts) */
+.word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  /* room for descenders and italic overhang inside the mask */
+  padding: 0 0.04em 0.08em;
+  margin: 0 -0.04em -0.08em;
+}
+.word {
+  display: inline-block;
+  will-change: transform;
+}
+.scrub-word {
+  --p: 0;
+  display: inline;
+  opacity: calc(0.2 + 0.8 * var(--p));
+  filter: blur(calc((1 - var(--p)) * 5px));
+  transition: none;
+}
+html.reduced-motion .scrub-word,
+html.reduced-motion .word {
+  opacity: 1 !important;
+  filter: none !important;
+  transform: none !important;
+}
+
+/* ------------------------------------------------------------------ HUD (hud.ts) */
+.hud {
+  position: fixed;
+  z-index: var(--z-ui);
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: max(12px, env(safe-area-inset-top)) max(var(--gutter), env(safe-area-inset-right)) 0
+    max(var(--gutter), env(safe-area-inset-left));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  color: var(--fg);
+  pointer-events: none;
+  /* a per-glyph halo in the wash colour: the bar's wash stays a quiet feather, but each 12px mono label carries its
+     own tight ground, so it holds 4.5:1 even where the frame behind is pale (rain sky under light ink) */
+  text-shadow: 0 0 1px var(--hud-wash), 0 0 2px var(--hud-wash), 0 0 3px var(--hud-wash), 0 0 6px var(--hud-wash), 0 1px 12px var(--shadow);
+  transition: color 600ms var(--ease-out);
+}
+.hud > * {
+  pointer-events: auto;
+}
+.hud::before {
+  /* a quiet tone wash under the bar so copy passing beneath never collides with the controls */
+  content: '';
+  position: absolute;
+  z-index: -1;
+  /* SPEC §8: ink on transparent. No band: a light tint that feathers out over the whole height, plus a soft blur
+     under it, so copy scrolling beneath (Next shore, colophon) dissolves before it reaches the brand instead of
+     colliding with it, while the frame itself still reads through. */
+  inset: 0 0 -40px;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--hud-wash) 58%, transparent) 0%,
+    color-mix(in srgb, var(--hud-wash) 36%, transparent) 42%,
+    color-mix(in srgb, var(--hud-wash) 12%, transparent) 74%,
+    transparent 100%
+  );
+  -webkit-backdrop-filter: blur(5px);
+  backdrop-filter: blur(5px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.9) 40%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, rgba(0, 0, 0, 0.9) 40%, transparent 100%);
+  pointer-events: none;
+}
+.hud__id {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 44px;
+}
+.hud__home {
+  /* a 44px hit target around the 40px mark (on phones the name is hidden and the link is just the mark) */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  flex: none;
+}
+.hud__mark {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  color: var(--fg);
+}
+.hud__mark .gap-close {
+  stroke: var(--lantern);
+}
+.hud__lightsbox {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.hud__lights {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  list-style: none;
+  margin: 0;
+  /* a 44px hover / focus target around the three 8px dots */
+  padding: 0 8px;
+  min-height: 44px;
+  border-radius: 999px;
+  cursor: help;
+}
+.hud__lights:focus-visible {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+}
+/* legend: what the three dots are (hover or focus), on paper so it reads over any frame */
+.hud__legend {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 2;
+  min-width: 248px;
+  padding: 12px 14px 12px;
+  border-radius: 6px;
+  background: var(--paper);
+  color: var(--ink);
+  text-shadow: none;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.2);
+  font: 400 12px/1.4 var(--font-mono);
+  letter-spacing: 0.04em;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out), visibility 0s linear 180ms;
+  pointer-events: none;
+}
+.hud__lights:hover + .hud__legend,
+.hud__lights:focus-visible + .hud__legend {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 180ms var(--ease-out), transform 180ms var(--ease-out), visibility 0s;
+}
+.hud__legend p {
+  margin: 0;
+}
+.hud__legend-title {
+  font: 500 15px/1.2 var(--font-display);
+  letter-spacing: 0.01em;
+  margin-bottom: 8px !important;
+}
+.hud__legend-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  display: grid;
+  gap: 5px;
+}
+.hud__legend-list li {
+  --c: var(--lantern);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+.hud__legend-state {
+  margin-inline-start: -4px;
+}
+.hud__legend-list li[data-light='gratitude'] { --c: var(--sea-teal); }
+.hud__legend-list li[data-light='forgive'] { --c: var(--rain-silver); }
+.hud__legend-list [lang^='zh'] {
+  font-family: var(--font-cjk);
+  min-width: 2.2em;
+}
+.hud__legend-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid rgba(28, 27, 25, 0.6);
+}
+.hud__legend-list li.is-earned .hud__legend-dot {
+  background: var(--c);
+  border-color: color-mix(in srgb, var(--c) 70%, var(--ink));
+}
+.hud__legend-state {
+  color: rgba(28, 27, 25, 0.72);
+}
+.hud__legend-note {
+  color: rgba(28, 27, 25, 0.78);
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+/* the 2 s caption when a light is earned */
+.hud__caption {
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 50%;
+  white-space: nowrap;
+  font: 400 12px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--fg);
+  opacity: 0;
+  transform: translate(-6px, -50%);
+  transition: opacity 260ms var(--ease-out), transform 260ms var(--ease-out);
+  pointer-events: none;
+}
+.hud__caption.is-on {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+/* while the caption shows, the name steps aside so the two never overlap */
+.hud__id:has(.hud__caption.is-on) .hud__name {
+  opacity: 0;
+}
+.hud__name {
+  transition: opacity 260ms var(--ease-out);
+}
+.hud__light {
+  --c: var(--lantern);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--fg-3);
+  background: transparent;
+  transition: background-color 500ms var(--ease-out), border-color 500ms var(--ease-out), box-shadow 500ms var(--ease-out);
+}
+.hud__light[data-light='gratitude'] { --c: var(--sea-teal); }
+.hud__light[data-light='forgive'] { --c: var(--rain-silver); }
+.hud__light.is-earned {
+  background: var(--c);
+  border-color: var(--c);
+  box-shadow: 0 0 10px var(--c);
+}
+.hud__name {
+  font: 500 15px/1 var(--font-display);
+  letter-spacing: 0.01em;
+  margin-left: 4px;
+  white-space: nowrap;
+}
+.hud__controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.hud__menu {
+  display: contents;
+}
+.hud__btn {
+  appearance: none;
+  background: none;
+  border: 0;
+  margin: 0;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font: 400 12px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--fg);
+  /* the UA sheet resets text-shadow on <button>; take the bar's halo so button labels hold contrast like links do */
+  text-shadow: inherit;
+  cursor: pointer;
+  border-radius: 999px;
+  text-decoration: none;
+  transition: background-color var(--dur-ui) var(--ease-out), color var(--dur-ui) var(--ease-out);
+}
+.hud__btn:hover {
+  background: color-mix(in srgb, var(--scrim) 70%, transparent);
+}
+/* L key: the Logbook control answers at once, before the overlay opens */
+.hud__btn.is-pressed {
+  background: color-mix(in srgb, var(--lantern) 26%, transparent);
+  box-shadow: inset 0 0 0 1px var(--lantern);
+  transition: none;
+}
+.hud__btn kbd {
+  /* a small keycap: the full ink (not --fg-3, which fails 4.5:1 on pale frames), boxed so it reads as a key */
+  font: inherit;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--fg);
+  padding: 2px 4px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+}
+.hud__satchel {
+  font-variant-numeric: tabular-nums;
+}
+.hud__satchel .glyph {
+  color: var(--lantern);
+  font-size: 13px;
+}
+/* on a pale frame (dark-ink tone) the bright lantern gold washes out on the cream halo: a deeper ember of it keeps
+   the satchel mark above 3:1 as a graphic; on dark frames it stays the full lantern */
+html:not([data-tone='light']) .hud .hud__satchel .glyph {
+  color: color-mix(in srgb, var(--lantern) 52%, var(--ink));
+}
+.hud__satchel.is-bump .count {
+  animation: hud-bump 180ms var(--ease-out);
+}
+@keyframes hud-bump {
+  50% { transform: scale(1.12); }
+}
+.hud__satchel .count {
+  display: inline-block;
+}
+.hud__sound .glyph {
+  position: relative;
+  font-size: 14px;
+}
+.hud__sound[aria-pressed='false'] .glyph::after {
+  content: '';
+  position: absolute;
+  left: -2px;
+  right: -2px;
+  top: 50%;
+  height: 1px;
+  background: currentColor;
+  transform: rotate(-40deg);
+}
+.hud__menu-toggle {
+  display: none;
+}
+
+/* ---- welcome toast (live.ts) */
+.toast {
+  position: fixed;
+  z-index: calc(var(--z-ui) + 1);
+  top: calc(var(--hud-top) + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+  padding: 12px 18px;
+  border-radius: 999px;
+  background: var(--paper);
+  color: var(--ink);
+  font: 400 13px/1.3 var(--font-mono);
+  letter-spacing: 0.03em;
+  box-shadow: 0 6px 30px rgba(0, 0, 0, 0.18);
+  opacity: 0;
+  transition: opacity 500ms var(--ease-out), transform 500ms var(--ease-out);
+  pointer-events: none;
+}
+.toast.is-on {
+  opacity: 1;
+}
+
+/* ---- journey track (scroll-progress-timeline) */
+.track-blur {
+  position: fixed;
+  z-index: var(--z-ui);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--track-h) + 64px);
+  pointer-events: none;
+}
+.track-blur > div,
+.track-blur::before,
+.track-blur::after {
+  position: absolute;
+  inset: 0;
+}
+.track-blur::before {
+  content: '';
+  z-index: 1;
+  backdrop-filter: blur(0.5px);
+  -webkit-backdrop-filter: blur(0.5px);
+  mask: linear-gradient(to bottom, transparent 0%, #000 12.5%, #000 25%, transparent 37.5%);
+}
+.track-blur > div:nth-of-type(1) { z-index: 2; backdrop-filter: blur(1px); -webkit-backdrop-filter: blur(1px); mask: linear-gradient(to bottom, transparent 12.5%, #000 25%, #000 37.5%, transparent 50%); }
+.track-blur > div:nth-of-type(2) { z-index: 3; backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); mask: linear-gradient(to bottom, transparent 25%, #000 37.5%, #000 50%, transparent 62.5%); }
+.track-blur > div:nth-of-type(3) { z-index: 4; backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); mask: linear-gradient(to bottom, transparent 37.5%, #000 50%, #000 62.5%, transparent 75%); }
+.track-blur > div:nth-of-type(4) { z-index: 5; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); mask: linear-gradient(to bottom, transparent 50%, #000 62.5%, #000 75%, transparent 87.5%); }
+.track-blur > div:nth-of-type(5) { z-index: 6; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); mask: linear-gradient(to bottom, transparent 62.5%, #000 75%, #000 87.5%, transparent 100%); }
+.track-blur > div:nth-of-type(6) { z-index: 7; backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); mask: linear-gradient(to bottom, transparent 75%, #000 87.5%, #000 100%); }
+.track-blur::after {
+  content: '';
+  z-index: 8;
+  /* a faint tone wash at the very bottom so the track reads on any frame */
+  background: linear-gradient(to bottom, transparent 20%, color-mix(in srgb, var(--track-wash) 70%, transparent) 62%, var(--track-wash) 100%);
+}
+
+.track {
+  position: fixed;
+  z-index: calc(var(--z-ui) + 1);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0 max(var(--gutter), env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom))
+    max(var(--gutter), env(safe-area-inset-left));
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) minmax(0, 4.2fr) minmax(150px, 1fr);
+  align-items: end;
+  column-gap: clamp(16px, 3vw, 40px);
+  color: var(--fg);
+  font: 400 11.5px/1.3 var(--font-mono);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 10px var(--shadow);
+  transition: color 600ms var(--ease-out);
+}
+.track__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 6px;
+  min-height: 44px;
+  min-width: 0;
+  justify-content: flex-end;
+}
+/* the first and last stations hang 22px past the line ends: keep the meta text clear of their labels */
+.track__meta--start {
+  padding-inline-end: 24px;
+}
+.track__meta--start .track__value {
+  white-space: normal;
+  text-wrap: balance;
+}
+/* the Loop's water cycle: one line where the column allows it */
+.track__meta--start .track__value.is-cycle {
+  letter-spacing: 0.01em;
+}
+@media (min-width: 1200px) {
+  .track__meta--start .track__value.is-cycle {
+    white-space: nowrap;
+    font-size: 10.5px;
+  }
+}
+.track__meta--end {
+  text-align: right;
+  align-items: flex-end;
+}
+.track__label {
+  /* --fg-3 falls under 4.5:1 on pale frames; labels take the second ink with a tight halo */
+  color: var(--fg-2);
+  text-shadow: 0 0 2px var(--shadow), 0 1px 10px var(--shadow);
+}
+.track__value {
+  color: var(--fg);
+  white-space: nowrap;
+}
+.track__clocks {
+  display: flex;
+  gap: 14px;
+  white-space: nowrap;
+}
+/* mid widths: the two clocks side by side reach into the Next station, so they stack */
+@media (min-width: 761px) and (max-width: 1279px) {
+  .track__clocks {
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+  }
+}
+.track__line {
+  position: relative;
+  height: 64px;
+}
+.track__stations {
+  position: absolute;
+  inset: 0;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.track__line::before,
+.track__fill {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 21px;
+  height: 1px;
+  background: var(--rule);
+}
+.track__fill {
+  background: var(--lantern);
+  height: 2px;
+  bottom: 20.5px;
+  transform-origin: left center;
+  transform: scaleX(0);
+  will-change: transform;
+}
+.track__station {
+  position: absolute;
+  bottom: 0;
+  left: var(--x);
+  transform: translateX(-50%);
+}
+.track__station:first-child { transform: translateX(-22px); }
+.track__station:last-child { transform: translateX(calc(-100% + 22px)); }
+.track__stop {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0 4px;
+  min-width: 44px;
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--fg-2);
+  font: inherit;
+  letter-spacing: inherit;
+  text-shadow: inherit;
+  white-space: nowrap;
+}
+.track__station:first-child .track__stop { align-items: flex-start; }
+.track__station:last-child .track__stop { align-items: flex-end; }
+.track__stop .name [lang^='zh'] {
+  font-family: var(--font-cjk);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+}
+.track__dot {
+  width: 9px;
+  height: 9px;
+  margin: 0 18px 17px;
+  border-radius: 50%;
+  border: 1px solid var(--fg-2);
+  background: transparent;
+  transition: background-color 400ms var(--ease-out), border-color 400ms var(--ease-out), transform 400ms var(--ease-out);
+}
+.track__station.is-reached .track__dot {
+  background: var(--lantern);
+  border-color: var(--lantern);
+}
+.track__station[aria-current='step'] .track__stop,
+.track__stop[aria-current='step'] {
+  color: var(--fg);
+}
+.track__stop[aria-current='step'] .track__dot {
+  transform: scale(1.45);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--lantern) 25%, transparent);
+}
+.track__stop:hover {
+  color: var(--fg);
+}
+.track__current,
+.track__satchel {
+  display: none;
+}
+/* Desktop: the phone-only bar controls stay out of the grid whatever else styles .hud__btn / [data-open] (an
+   overlay such as the Workshop inspect card must never pull the track's Satchel count or Atlas cue into it),
+   and the end meta never wraps, so opening an overlay cannot relayout the track. */
+@media (min-width: 761px) {
+  .track > .track__current,
+  .track > .track__satchel {
+    display: none !important;
+  }
+  .track > .track__meta--end .track__label,
+  .track > .track__meta--end .track__value {
+    white-space: nowrap;
+  }
+}
+
+/* ------------------------------------------------------------------ poster mode (no WebGL / no JS) */
+/* Composed CSS stills per chapter, using the SPEC palette. The story stays beautiful without a canvas. */
+html.no-webgl body,
+html:not(.js) body {
+  background: var(--dusk);
+}
+#posters {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-world);
+  pointer-events: none;
+}
+html.js.no-webgl #posters {
+  display: block;
+}
+/* backstop: the seam veil never sits over the posters (the engine also resets it when the world fails) */
+html.no-webgl #veil {
+  display: none;
+}
+#posters .poster,
+html:not(.js) .chapter {
+  background-color: var(--poster-base, var(--dusk));
+  background-image: var(--poster);
+  background-repeat: no-repeat;
+  background-size: var(--poster-size, 100% 100%);
+  background-position: var(--poster-pos, 0 0);
+}
+/* JS is booting (src/loader/head.html sets kb-boot until main.ts adds .js, under the loader): the no-JS stills
+   stand down, or the first paint would fetch every poster JPEG ahead of the bundle. The base colour stays. */
+html.kb-boot:not(.js) .chapter {
+  background-image: none;
+}
+#posters .poster {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 1.4s var(--ease-out);
+}
+#posters .poster.is-on {
+  opacity: 1;
+}
+html:not(.js) .chapter {
+  background-attachment: fixed;
+}
+/* soft mist where two posters meet (no-JS book) */
+html:not(.js) .chapter + .chapter::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 28svh;
+  background: linear-gradient(to bottom, var(--mist-in, transparent), transparent);
+  pointer-events: none;
+}
+/* per-chapter tone in poster mode */
+html.no-webgl .chapter,
+html:not(.js) .chapter {
+  --fg: var(--ink);
+  --fg-2: rgba(28, 27, 25, 0.8);
+  --fg-3: rgba(28, 27, 25, 0.62);
+  --rule: rgba(28, 27, 25, 0.3);
+  /* posters are composed for contrast already: a lighter haze than over the live world */
+  --scrim: rgba(243, 237, 226, 0.3);
+  --scrim-edge: rgba(243, 237, 226, 0);
+  --shadow: rgba(243, 237, 226, 0.45);
+  color: var(--fg);
+}
+html.no-webgl .chapter.is-dark,
+html:not(.js) .chapter.is-dark,
+html.no-webgl :is(.chapter--crossing, .chapter--rain, .chapter--workshop),
+html:not(.js) :is(.chapter--crossing, .chapter--rain, .chapter--workshop) {
+  --fg: var(--paper);
+  --fg-2: rgba(243, 237, 226, 0.84);
+  --fg-3: rgba(243, 237, 226, 0.66);
+  --rule: rgba(243, 237, 226, 0.3);
+  --scrim: rgba(10, 13, 17, 0.26);
+  --scrim-edge: rgba(10, 13, 17, 0);
+  --shadow: rgba(8, 10, 12, 0.6);
+}
+
+/* 0 Prologue: dusk on the wide Yangtze, far bank lost in haze, one lantern on the water */
+.chapter--prologue,
+.poster--prologue {
+  --poster-base: #cdc2b1; /* the rendered dusk mist (rituals.css poster still); copy here is ink */
+  --poster:
+    radial-gradient(14px 14px at 64% 72%, rgba(255, 214, 140, 0.95), rgba(242, 169, 59, 0.55) 40%, transparent 100%),
+    radial-gradient(160px 60px at 64% 74%, rgba(242, 169, 59, 0.22), transparent 70%),
+    radial-gradient(3px 90px at 64% 80%, rgba(242, 169, 59, 0.28), transparent 100%),
+    linear-gradient(to bottom, transparent 63.6%, rgba(40, 52, 58, 0.55) 64%, rgba(80, 98, 104, 0.25) 66%, transparent 70%),
+    linear-gradient(to bottom, #2b3442 0%, #4a5664 30%, #8d8c8a 50%, #c8a68a 60%, #d9b58f 63%, #6f8584 64.2%, #4d6266 80%, #2c3a40 100%);
+}
+/* 1 River: jade mist over the Yangtze. The far bank is a low ink band lost in haze, a mist streak lies across
+   it, and one warm light burns on the bank: the grandparents' window. */
+.chapter--river,
+.poster--river {
+  --poster-base: #9db5a8;
+  --mist-in: #2c3a40;
+  --poster:
+    radial-gradient(5px 6px at 23% 50.2%, #ffe6b0 0%, #f2a93b 60%, rgba(242, 169, 59, 0) 100%),
+    radial-gradient(120px 70px at 23% 50.5%, rgba(242, 169, 59, 0.34), rgba(242, 169, 59, 0) 70%),
+    radial-gradient(3px 60px at 23% 58%, rgba(242, 169, 59, 0.3), rgba(242, 169, 59, 0) 100%),
+    radial-gradient(55% 3.5% at 34% 47.6%, rgba(214, 224, 217, 0.75), rgba(214, 224, 217, 0) 100%),
+    radial-gradient(40% 2.5% at 78% 49%, rgba(214, 224, 217, 0.55), rgba(214, 224, 217, 0) 100%),
+    linear-gradient(to bottom, transparent 0 48%, rgba(58, 74, 66, 0.2) 48.6%, rgba(52, 66, 59, 0.62) 49.6%, rgba(52, 66, 59, 0.62) 50.6%, rgba(74, 94, 85, 0.25) 51.6%, rgba(74, 94, 85, 0) 55%),
+    linear-gradient(to bottom, #cdd9d0 0%, #b9cbc0 30%, #a8beb2 48%, #9ab2a6 51%, #82998e 66%, #637d72 84%, #4b6259 100%);
+}
+/* 2 Crossing: the Pacific at night, moon and stars, dawn waiting at the bottom */
+.chapter--crossing,
+.poster--crossing {
+  --poster-base: #0b1a2a;
+  --mist-in: #3f554d;
+  --poster:
+    radial-gradient(34px 34px at 76% 22%, #f6f1e4 0%, #efe6cf 60%, rgba(239, 230, 207, 0) 100%),
+    radial-gradient(220px 220px at 76% 22%, rgba(220, 225, 235, 0.16), transparent 70%),
+    radial-gradient(1.2px 1.2px at 12% 14%, #fff, transparent),
+    radial-gradient(1px 1px at 24% 30%, #dfe7f0, transparent),
+    radial-gradient(1.4px 1.4px at 40% 9%, #fff, transparent),
+    radial-gradient(1px 1px at 55% 26%, #cfd8e3, transparent),
+    radial-gradient(1.2px 1.2px at 63% 12%, #fff, transparent),
+    radial-gradient(1px 1px at 88% 34%, #dfe7f0, transparent),
+    radial-gradient(1px 1px at 92% 8%, #fff, transparent),
+    radial-gradient(1px 1px at 6% 40%, #cfd8e3, transparent),
+    radial-gradient(240px 80px at 76% 66%, rgba(239, 230, 207, 0.12), transparent 70%),
+    linear-gradient(to bottom, #050c15 0%, #0b1a2a 46%, #13283d 58%, #0c1d2e 59%, #0a1826 80%, #1b2d3c 94%, #4a4a52 100%);
+}
+/* 3 Coast: Orange County at golden hour, low sun on the water */
+.chapter--coast,
+.poster--coast {
+  --poster-base: #f4b183;
+  --mist-in: #4a4a52;
+  --poster:
+    radial-gradient(70px 70px at 30% 57%, #fff2d6 0%, #ffd79a 45%, rgba(255, 215, 154, 0) 100%),
+    radial-gradient(520px 260px at 30% 60%, rgba(255, 200, 120, 0.4), transparent 70%),
+    linear-gradient(to bottom, transparent 60%, rgba(255, 230, 180, 0.5) 60.2%, transparent 61%),
+    linear-gradient(100deg, transparent 72%, rgba(80, 60, 50, 0.55) 72.4%, rgba(70, 52, 44, 0.7) 100%),
+    linear-gradient(to bottom, #e9c39a 0%, #f2b98a 30%, #f4b183 50%, #f7c58f 60%, #6aa09a 60.5%, #3e8c8a 72%, #2f6e6e 100%);
+}
+/* 4 Rain: Seattle, evergreens in steady rain */
+.chapter--rain,
+.poster--rain {
+  --poster-base: #2f4a3e;
+  --mist-in: #2f6e6e;
+  --poster:
+    repeating-linear-gradient(104deg, transparent 0 9px, rgba(191, 199, 204, 0.09) 9px 10px, transparent 10px 23px),
+    repeating-linear-gradient(101deg, transparent 0 17px, rgba(191, 199, 204, 0.06) 17px 18px, transparent 18px 31px),
+    radial-gradient(9px 9px at 78% 62%, rgba(255, 120, 90, 0.9), rgba(200, 60, 40, 0.4) 60%, transparent 100%),
+    linear-gradient(to top, #1c2c25 0%, #233a30 18%, transparent 46%),
+    linear-gradient(to bottom, #8c979c 0%, #6f7d7d 26%, #4c6258 48%, #2f4a3e 70%, #1f3029 100%);
+}
+/* 5 Workshop: a warm room at night, one lamp, a shelf, a dark window with rain running down it */
+.chapter--workshop,
+.poster--workshop {
+  --poster-base: #1e1712;
+  --mist-in: #1f3029;
+  --poster:
+    radial-gradient(620px 420px at 22% 18%, rgba(242, 169, 59, 0.3), transparent 70%),
+    radial-gradient(closest-side, rgba(242, 169, 59, 0.16), transparent),
+    linear-gradient(to right, transparent calc(50% - 3px), #140e0a calc(50% - 3px) calc(50% + 3px), transparent calc(50% + 3px)),
+    linear-gradient(to bottom, transparent calc(42% - 3px), #140e0a calc(42% - 3px) calc(42% + 3px), transparent calc(42% + 3px)),
+    repeating-linear-gradient(97deg, transparent 0 11px, rgba(191, 199, 204, 0.1) 11px 12px, transparent 12px 29px),
+    linear-gradient(to bottom, #16222c 0%, #1f2f3a 55%, #2b3138 100%),
+    linear-gradient(#120d09, #120d09),
+    linear-gradient(to bottom, transparent 68%, #5a3a22 68.2%, #6d482b 69.6%, #3b2615 71%, rgba(20, 14, 10, 0.6) 76%, transparent 86%),
+    linear-gradient(to bottom, #241b14 0%, #2a1f16 40%, #1e1712 100%);
+  --poster-size: 100% 100%, 26% 30%, 20% 46%, 20% 46%, 20% 46%, 20% 46%, calc(20% + 14px) calc(46% + 14px), 100% 100%, 100% 100%;
+  --poster-pos: 0 0, 79% 26%, 82.5% 18.5%, 82.5% 18.5%, 82.5% 18.5%, 82.5% 18.5%, 82.6% 18.2%, 0 0, 0 0;
+}
+/* 6 Loop: above the clouds, one ink circle with a gap */
+.chapter--loop,
+.poster--loop {
+  --poster-base: #e7e0d2;
+  --mist-in: #1e1712;
+  --poster:
+    radial-gradient(circle at 50% 50%, transparent 0 calc(min(36vw, 36vh) - 3px), rgba(28, 27, 25, 0.16) calc(min(36vw, 36vh) - 2px), rgba(28, 27, 25, 0.16) calc(min(36vw, 36vh) + 3px), transparent calc(min(36vw, 36vh) + 4px)),
+    radial-gradient(80% 50% at 50% 100%, rgba(157, 181, 168, 0.4), transparent 70%),
+    linear-gradient(to bottom, #d8d6d0 0%, #ece6da 40%, #f3ede2 70%, #e3ddd0 100%);
+}
+/* 7 Next: dawn on a calm shore */
+.chapter--next,
+.poster--next {
+  --poster-base: #f3ede2;
+  --mist-in: #e3ddd0;
+  --poster:
+    radial-gradient(900px 260px at 70% 100%, rgba(244, 177, 131, 0.55), transparent 70%),
+    radial-gradient(40px 40px at 70% 74%, rgba(255, 240, 210, 0.9), transparent 100%),
+    linear-gradient(to bottom, #e8e6e2 0%, #f3ede2 40%, #f6e3cc 70%, #f2cfa8 100%);
+}
+@media (max-width: 760px) {
+  /* the poster stills (rituals.css) are portrait 390x844 here: full width, natural height, pinned to the top of
+     the chapter, so they cover the first screen without stretching */
+  html:not(.js) .chapter {
+    background-attachment: scroll;
+    background-size: 100% auto;
+    background-position: center top;
+  }
+}
+
+/* ------------------------------------------------------------------ no JavaScript: a static editorial book */
+html:not(.js) .chapter__hold {
+  height: auto;
+}
+html:not(.js) .chapter__pin {
+  position: relative;
+  height: auto;
+  min-height: 100svh;
+  padding-top: 18svh;
+}
+/* the crossing's underwater line has no stage to fade in on without JS: give it its own row under the copy and
+   the keepsake cards instead of overlapping them */
+html:not(.js) .chapter__pin > .chapter__aside--stage {
+  grid-row: 2 !important;
+  grid-column: 3 / span 8;
+  margin: 8svh 0 4svh;
+}
+@media (max-width: 760px) {
+  html:not(.js) .chapter__pin > .chapter__aside--stage {
+    grid-column: 1 / -1;
+  }
+  html:not(.js) .chapter__pin:has(> .chapter__aside--stage) > .slot--hotspots {
+    grid-row: 3 !important;
+  }
+}
+html:not(.js) .hud,
+html:not(.js) .track,
+html:not(.js) .track-blur,
+html:not(.js) [data-js-only] {
+  display: none !important;
+}
+.logbook-static {
+  position: relative;
+  z-index: var(--z-story);
+  background: var(--paper);
+  color: var(--ink);
+  padding: 12svh var(--gutter);
+}
+
+/* ------------------------------------------------------------------ mobile (≤760px): authored, not shrunk */
+@media (max-width: 760px) {
+  body {
+    font-size: 17px;
+  }
+  .chapter__pin {
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: calc(var(--hud-top) + 8px);
+    padding-bottom: calc(var(--track-h) + 16px);
+  }
+  .chapter__pin > *,
+  [data-place] .chapter__copy,
+  [data-place] .seal {
+    grid-column: 1 / -1 !important;
+  }
+  .chapter__copy,
+  [data-place] .chapter__copy {
+    max-width: 100%;
+    justify-self: stretch;
+  }
+  .chapter__copy::before {
+    inset: -28px -16px;
+    filter: blur(24px);
+  }
+  .chapter__aside p::before {
+    inset: -30% -4%;
+  }
+  .chapter__title {
+    font-size: clamp(2.1rem, 9.6vw, 2.9rem);
+    max-width: 14ch;
+  }
+  h1.chapter__title {
+    font-size: clamp(3rem, 15.5vw, 4.2rem);
+  }
+  .chapter__body {
+    font-size: 17.5px;
+    margin-top: 16px;
+  }
+  .seal {
+    font-size: clamp(64px, 20vw, 92px);
+    opacity: 0.8;
+  }
+  [data-place] .seal {
+    justify-self: end !important;
+    align-self: start !important;
+    margin-top: 0 !important;
+  }
+  [data-place='right-mid'] .chapter__copy,
+  [data-place='left-mid'] .chapter__copy {
+    align-self: end;
+  }
+  [data-place='left-high'] .chapter__copy {
+    align-self: start;
+    margin-top: 0;
+  }
+  [data-place='left-high'] .seal {
+    align-self: end !important;
+  }
+  .chapter--loop .chapter__body {
+    font-size: 21px;
+  }
+  .chapter__aside {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .chapter__aside p,
+  .chapter--rain .chapter__aside p {
+    grid-column: 1 / -1;
+    font-size: 23px;
+  }
+  .cta-row {
+    margin-top: 22px;
+  }
+  .colophon {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 16px;
+    padding-top: 24px;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .colophon__mark {
+    display: none; /* the same mark is already in the HUD */
+  }
+  .colophon__credits {
+    grid-column: 1 / -1;
+    gap: 6px;
+  }
+  .colophon__credits div {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .colophon__copy {
+    grid-column: 1 / -1;
+  }
+  .chapter--next .chapter__pin {
+    padding-top: calc(var(--hud-top) + 4svh);
+  }
+  .shore__now {
+    margin-top: 18px;
+  }
+  .shore__links {
+    gap: 0 18px;
+  }
+
+  /* HUD collapses: mark · lights · menu. The Satchel and the Atlas move to the bottom bar (thumb zone). */
+  .hud__name {
+    display: none;
+  }
+  .hud .hud__satchel {
+    display: none;
+  }
+  /* On phones in-flow content (Next shore, tally, colophon) scrolls right under the mark: the same feathered
+     wash, a touch denser with a stronger blur, so nothing legible passes through the mark or the lights, yet the
+     top of the frame still shows through (no solid band). */
+  .hud::before {
+    inset: 0 0 -32px;
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--hud-wash) 72%, transparent) 0%,
+      color-mix(in srgb, var(--hud-wash) 48%, transparent) 50%,
+      transparent 100%
+    );
+    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(7px);
+    -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 0%, #000 45%, transparent 100%);
+  }
+  .hud__menu-toggle {
+    display: inline-flex;
+  }
+  .hud__menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: max(var(--gutter), env(safe-area-inset-right));
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 168px;
+    padding: 6px;
+    border-radius: 14px;
+    background: var(--paper);
+    color: var(--ink);
+    text-shadow: none;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.22);
+  }
+  .hud__menu .hud__btn {
+    color: var(--ink);
+    justify-content: space-between;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+  .hud__menu .hud__sound {
+    flex-direction: row-reverse; /* label left, like Atlas and Logbook */
+  }
+  .hud__menu .hud__btn:hover {
+    background: rgba(28, 27, 25, 0.06);
+  }
+  .hud.is-menu-open .hud__menu {
+    display: flex;
+  }
+  .hud__btn kbd {
+    display: none;
+  }
+
+  /* track collapses to a 2px line, then: current station (opens the Atlas) · km · Satchel */
+  .track {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    column-gap: 10px;
+    row-gap: 4px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom));
+  }
+  .track__meta--start {
+    display: none;
+  }
+  .track__line {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    height: 2px;
+  }
+  .track__line::before,
+  .track__fill {
+    bottom: 0;
+    height: 2px;
+  }
+  .track__station {
+    display: none;
+  }
+  .track__current {
+    appearance: none;
+    background: none;
+    border: 0;
+    margin: 0 0 0 -8px;
+    padding: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    justify-self: start;
+    max-width: 100%;
+    grid-row: 2;
+    grid-column: 1;
+    min-width: 0;
+    min-height: 44px;
+    color: var(--fg);
+    font: inherit;
+    letter-spacing: inherit;
+    text-shadow: inherit;
+    cursor: pointer;
+    border-radius: 999px;
+  }
+  .track__here {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .track__cue {
+    flex: none;
+    padding: 3px 8px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-size: 10px;
+    color: var(--fg-2);
+  }
+  .track__satchel {
+    display: inline-flex;
+    grid-row: 2;
+    grid-column: 3;
+    margin-right: -12px;
+  }
+  .track__current:focus-visible,
+  .track__satchel:focus-visible {
+    outline: 2px solid var(--lantern);
+    outline-offset: 3px;
+  }
+  .track__clocks {
+    gap: 10px;
+    font-size: 10.5px;
+  }
+  /* One column on phones: every hotspots slot (keepsakes, the Workshop shelf index) takes the full row under
+     the copy. `.chapter` lifts this above the desktop placements, including the Workshop's `1 / span 7`,
+     which would otherwise open implicit sliver columns in a one-column grid. */
+  .chapter [data-place] > .slot--hotspots {
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    justify-self: stretch !important;
+    justify-content: flex-start;
+    min-width: 0;
+  }
+  .track__meta--end {
+    grid-row: 2;
+    grid-column: 2;
+    align-self: center;
+    min-height: 0;
+    padding-bottom: 0;
+  }
+  .track__meta--end .track__label {
+    display: none;
+  }
+  :root {
+    --track-h: calc(56px + env(safe-area-inset-bottom));
+  }
+  .track-blur {
+    height: calc(var(--track-h) + 40px);
+  }
+}
+
+/* ------------------------------------------------------------------ reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+  }
+  .word,
+  .scrub-word {
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+  .track__fill {
+    will-change: auto;
+  }
+}
+
+/* ------------------------------------------------------------------ print: the story reads as a book */
+@media print {
+  #world,
+  #veil,
+  #ui-root,
+  .skip-link,
+  .slot {
+    display: none !important;
+  }
+  .chapter {
+    min-height: 0;
+    background: none !important;
+    color: #000;
+  }
+  .chapter__hold,
+  .chapter__pin {
+    height: auto;
+    position: static;
+  }
+}

@@ -1,0 +1,488 @@
+<!-- Ch.0 "Light the lantern": fire-paper-loader, re-skinned as the brush circle (with its gap) lit like a wick.
+     Owned by the loader agent. Inlined into <head> by vite.config.ts, so it is self-contained.
+     The overlay is created from script (no JS: it never appears). The fire is drawn by a Worker on an
+     OffscreenCanvas started here, while the main thread is still free; one engine source (KB) runs in the
+     worker or, failing that, on the main thread. Contract: window 'loader:progress' {detail 0..1}, 'loader:done'. -->
+<style>
+  #kb-loader{position:fixed;inset:0;z-index:1000;pointer-events:none;contain:strict}
+  #kb-loader .kb-bg{position:absolute;inset:0;background:#0b0a09}
+  #kb-loader .kb-vis{position:absolute;inset:0}
+  #kb-loader canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  #kb-loader .kb-label{position:absolute;left:0;right:0;top:62%;text-align:center;white-space:nowrap;
+    font:400 11px/1 'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.24em;text-transform:uppercase;
+    color:rgba(243,237,226,.52);transition:opacity .4s linear .12s}
+  #kb-loader .kb-label b{display:inline-block;min-width:3.2ch;margin-left:.9em;text-align:left;font-weight:500;letter-spacing:.06em;
+    font-variant-numeric:tabular-nums;color:rgba(243,237,226,.84)}
+  #kb-loader .kb-label b::after{content:'%';margin-left:.15em;color:rgba(243,237,226,.52)}
+  #kb-loader.lit .kb-label{opacity:0}
+  #kb-loader .kb-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+  @media (prefers-reduced-motion:reduce){#kb-loader .kb-label{transition-duration:.15s;transition-delay:0s}}
+</style>
+<script>
+(function () {
+  'use strict';
+  if (window.__kbLoader) return;
+
+  /* Where the circle sits, in CSS px (both threads use this). */
+  function kbLayout(w, h) {
+    var R = Math.max(50, Math.min(118, Math.min(w * 0.17, h * 0.125)));
+    return { R: R, cx: w / 2, cy: Math.round(h * 0.45) };
+  }
+
+  /* The engine. Runs in the worker (IN_W) or on this thread, from the same source text. */
+  function KB(IN_W, WI) {
+    var cv = WI.canvas, reduced = !!WI.reduced, view = WI.view, t0 = WI.t0, target = WI.target || 0;
+    var OFF = IN_W ? performance.timeOrigin - WI.origin : 0;   /* the worker's clock moved onto the page's */
+    var post = IN_W ? function (m) { self.postMessage(m); } : WI.post;
+    var raf = typeof requestAnimationFrame === 'function' ? function (f) { requestAnimationFrame(f); }
+      : function (f) { setTimeout(function () { f(performance.now()); }, 16); };
+    var pnow = function () { return performance.now() + OFF; };
+
+    /* Pacing. F is how much of the stroke is alight (0..1). It follows a goal that is the real
+       progress but never behind a creep, on a critically damped spring, and is never still. */
+    var CEIL = 0.86, VMIN = 0.012, VMAX = 0.30;
+    var F = 0, Fp = 0, vF = 0, gW = 0, velF = 0, calm = 0, last = 0, f0 = 0;
+    var doneAt = 0, doneDur = 0, F0 = 0, M0 = 0, handed = false, alive = true, warming = false, upSent = false, dirty = 3;
+    var ss = function (a, b, x) { var t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+
+    var gl = null, prog = null, buf = null, U = {}, sProg = null, SU = {}, sets = [];
+
+    var VS = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.0,1.0);}';
+    /* The brush circle: a centreline that drifts inwards as the brush travels (so the ends do not meet),
+       a press at the start, a dry-brush tail; the gap sits just right of twelve o'clock, where the HUD mark has it. Shared by both programs. */
+    var GEO = [
+      'const float TAU=6.2831853, GAP=0.5934, TH0=0.9076;',   /* the HUD mark's gap: 52-86 deg */
+      'uniform float uR;',
+      'float rcOf(float s){ return uR*(1.015-0.045*s+0.012*sin(s*9.0+1.3)+0.008*sin(s*23.0+0.4)); }'
+    ].join('\n');
+    var NOISE = [
+      'float kbH(vec2 p){ vec3 q=fract(p.xyx*0.1031); q+=dot(q,q.yzx+33.33); return fract((q.x+q.y)*q.z); }',
+      'float vn(vec2 x){ vec2 i=floor(x), f=fract(x); f=f*f*(3.0-2.0*f);',
+      '  return mix(mix(kbH(i),kbH(i+vec2(1.0,0.0)),f.x),mix(kbH(i+vec2(0.0,1.0)),kbH(i+vec2(1.0,1.0)),f.x),f.y); }'
+    ].join('\n');
+    var FS = [
+      'precision highp float;',
+      'uniform vec2 uRes, uC; uniform float uPxS, uF, uTime, uGain, uCalm;',
+      GEO, NOISE,
+      'vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0); }',
+      'vec3 srgb(vec3 c){ return mix(c*12.92,1.055*pow(max(c,vec3(1e-5)),vec3(1.0/2.4))-0.055,step(0.0031308,c)); }',
+      /* half-width, CSS px: the press at the start, thinning as the ink runs out */
+      'float hwOf(float s){',
+      '  float w=uR*(0.046+0.046*(1.0-s)*(1.0-0.35*s)) + uR*0.030*exp(-(s*s)/0.0025);',
+      '  w*=1.0+0.16*(vn(vec2(s*26.0,1.7))-0.5);',
+      '  return w*mix(1.0,0.55,smoothstep(0.82,1.0,s)); }',
+      /* the ember ramp: deep red, orange, gold. Nothing pale: gold, not cream */
+      'vec3 ramp(float h){',
+      '  vec3 c=mix(vec3(0.20,0.012,0.002),vec3(0.62,0.09,0.012),smoothstep(0.0,0.35,h));',
+      '  c=mix(c,vec3(1.02,0.36,0.05),smoothstep(0.35,0.72,h));',
+      '  return mix(c,vec3(1.10,0.64,0.17),smoothstep(0.80,1.0,h)); }',
+      'void main(){',
+      '  vec2 q=gl_FragCoord.xy/uPxS-uC; float aa=1.0/uPxS, t=uTime;',
+      '  float r=length(q), span=TAU-GAP, aF=uF*span;',
+      '  vec2 P=rcOf(clamp(uF,0.0,1.0))*vec2(cos(TH0-aF),sin(TH0-aF));',
+      '  float dP=length(q-P);',
+      '  if(abs(r-uR)>0.40*uR && dP>48.0){ gl_FragColor=vec4(0.0); return; }',
+      '  float th=atan(q.y,q.x);',
+      '  float a=mod(TH0-th+0.5*GAP,TAU)-0.5*GAP;',
+      '  float s=a/span, sc=clamp(s,0.0,1.0);',
+      '  float rc=rcOf(sc), hw=hwOf(sc), dv=r-rc, v=dv/hw, L=a*rc;',
+      /* body: a round press where the brush lands, straight sides after; fibrous edge */
+      '  float sd = a<0.0 ? hw*(0.92+0.16*vn(vec2(th*9.0,2.0)))-length(vec2(L,dv)) : hw-abs(dv);',
+      '  sd+=1.1*(vn(q*0.42)-0.5)+0.7*(vn(q*1.35+5.0)-0.5);',
+      '  float cov=clamp(0.5+sd/aa,0.0,1.0);',
+      /* dry brush: bristle streaks along the stroke open up towards the tail, and end at different lengths */
+      '  float dry=smoothstep(0.42,1.0,s);',
+      '  float br=0.7*vn(vec2(v*7.5+3.0,L*0.010))+0.3*vn(vec2(v*19.0,L*0.03+9.0));',
+      '  float thr=dry*0.60+0.02;',
+      '  cov*=smoothstep(thr-0.05,thr+0.05,br+0.08*(1.0-dry));',
+      '  float sEnd=1.0-0.07*vn(vec2(v*3.5+2.0,3.0))-0.03*v*v;',
+      '  cov*=clamp(0.5+(sEnd-s)*span*uR/aa,0.0,1.0);',
+      '  float gr=0.55*vn(q*0.55+3.0)+0.45*vn(q*1.6);',
+      /* the burn: x is CSS px behind the front, measured along the stroke (+ alight); the front is ragged across */
+      '  float fr=5.0*(vn(vec2(v*2.2+1.0,t*1.1))-0.5)+2.5*(vn(vec2(v*6.0+4.0,t*3.2))-0.5)-3.0*v*v;',
+      '  float x=(aF-a)*rc+fr;',
+      '  float behind=clamp(0.5+x/aa,0.0,1.0);',
+      '  float run=0.5*vn(vec2(L*0.018-t*1.3,2.0))+0.5*vn(vec2(L*0.027+t*1.7,5.0));',
+      '  float flk=vn(vec2(L*0.11+v*2.0,t*7.0)+3.0);',
+      '  float roll=vn(vec2(v*1.5,x*0.09-t*2.6)+11.0);',
+      '  float heat=clamp(0.62+0.5*(run-0.5)+0.22*(flk-0.5),0.0,1.0);',
+      /* a bright thread at the front that beads and pinches across the stroke */
+      '  float bead=0.5+vn(vec2(v*4.0-t*0.8,7.0));',
+      '  float wc=max(0.7,(0.9+2.4*heat)*bead);',
+      '  float core=behind*exp(-max(x,0.0)/wc)+(1.0-behind)*exp(-max(-x,0.0)/0.35)*0.35;',
+      '  float Wz=26.0+22.0*heat, k=max(x,0.0)/Wz;',
+      '  float tauZ=clamp(1.0-k*0.95+0.22*(gr-0.5)+0.30*(run-0.5)+0.22*(roll-0.5)+0.12*(flk-0.5),0.0,1.0);',
+      /* behind the ember zone the stroke stays alight like a wick, smouldering, heat pulses running along it */
+      /* bristle streaks run along the stroke: the hot and cool threads of the brush, drifting slowly */
+      '  float bs=0.65*vn(vec2(v*6.5+1.0,L*0.016-t*0.25))+0.35*vn(vec2(v*15.0+7.0,L*0.05));',
+      '  float smo=0.36+0.30*(bs-0.5)+0.20*(run-0.5)+0.10*(gr-0.5)+0.10*(vn(vec2(L*0.04-t*0.6,v*2.0+1.0))-0.5);',
+      '  smo=mix(smo,0.70+0.10*(gr-0.5),uCalm);',
+      '  float tau=max(tauZ*(1.0-0.6*uCalm),smo);',
+      /* porous char opening in the older stretch, down to the dark; no glowing rims */
+      /* drawn out along the fibres (the stroke), few, ragged; never round leopard spots */
+      '  float pn=0.6*vn(vec2(v*3.2+21.0,L*0.035))+0.4*vn(vec2(v*8.0+4.0,L*0.11)), age=clamp(x/(Wz*4.0),0.0,1.0);',
+      '  float pore=smoothstep(0.76-0.05*age,0.80-0.05*age,pn)*smoothstep(0.8,1.8,k)*(1.0-uCalm);',
+      '  vec3 lit=ramp(tau)*(0.25+0.80*tau*tau)*(0.85+0.30*(gr-0.5));',
+      '  lit=mix(lit,vec3(0.010,0.007,0.005),pore*0.85);',
+      '  vec3 coreC=mix(vec3(1.40,0.56,0.09),vec3(1.85,1.02,0.30),heat);',
+      /* ahead of the fire: the unlit stroke, ash-dark on the black, just there */
+      '  vec3 ghost=vec3(0.026,0.021,0.017)*(0.65+0.7*gr);',
+      '  float pre=exp(-max(-x,0.0)/3.0)*(1.0-behind)*0.5;',
+      '  vec3 col=mix(ghost+vec3(0.5,0.05,0.006)*pre,lit,behind)*cov+coreC*core*cov*(1.0-0.8*uCalm);',
+      /* a tight glow round the lit stroke, a few px, never a neon hoop */
+      '  float og=exp(-max(-sd,0.0)/3.0)*(1.0-cov)*behind*(0.08+0.22*tau);',
+      '  col+=vec3(0.95,0.26,0.03)*og;',
+      /* the wick: a small hot flame at the front */
+      '  float hal=(exp(-dP/4.0)*0.55+exp(-dP/13.0)*0.09)*heat*(1.0-uCalm)*smoothstep(-0.01,0.0,1.0-uF);',
+      '  col+=vec3(1.2,0.42,0.06)*hal;',
+      '  col*=uGain;',
+      '  vec3 o=srgb(aces(col));',
+      '  float al=min(1.0,max(cov*mix(0.92,1.0,behind)*uGain,max(o.r,max(o.g,o.b))));',
+      '  gl_FragColor=vec4(o,al);',
+      '}'
+    ].join('\n');
+    /* Cinders thrown off the wick's flame: short streaks lifted by the heat, orange to deep red, never white.
+       Each is born where the front was when it was thrown (uF - age*uVF), so none slides with the front. */
+    var SVS = [
+      'attribute vec2 aCorner; attribute vec4 aSeed;',
+      'uniform vec2 uRes, uC; uniform float uPxS, uF, uVF, uTime, uLife, uRise, uSize, uOn;',
+      'varying vec2 vUv; varying float vFade, vHeat;',
+      GEO,
+      'vec2 front(float f){ float a=f*(TAU-GAP); return rcOf(f)*vec2(cos(TH0-a),sin(TH0-a)); }',
+      'vec2 traj(float age, vec2 o, float ang, float sp){',
+      '  float thrown=(1.0-exp(-age*3.0))/3.0;',
+      '  vec2 vel=vec2(cos(ang)*0.55, 0.55+0.6*abs(sin(ang*1.37+0.4)))*uRise*sp*60.0;',
+      '  return o+vel*thrown+vec2(sin(age*5.0+ang*7.0)*2.5*age, age*age*uRise*sp*38.0); }',
+      'void main(){',
+      '  vUv=aCorner+0.5; vFade=0.0; vHeat=0.0;',
+      '  float period=1.4+aSeed.z*1.4, age=mod(uTime+aSeed.y*period,period);',
+      '  float life=uLife*(0.55+0.9*aSeed.w);',
+      '  if(age>life || fract(aSeed.y*57.3)>uOn){ gl_Position=vec4(3.0,3.0,0.0,1.0); return; }',
+      '  float bF=clamp(uF-age*uVF,0.0,1.0);',
+      '  vec2 o=front(bF);',
+      '  float ang=aSeed.x, sp=aSeed.z, ph=age/life;',
+      '  vec2 c=traj(age,o,ang,sp), pv=traj(max(0.0,age-0.03),o,ang,sp);',
+      '  vec2 tg=normalize(c-pv+vec2(0.0,0.001)), nr=vec2(-tg.y,tg.x);',
+      '  float w=min(uSize*aSeed.w,1.8)*mix(1.0,0.55,ph);',
+      '  float len=w+clamp(length(c-pv)*1.6,1.5*w,3.5*w);',
+      '  vec2 p=uC+c+tg*aCorner.x*len+nr*aCorner.y*w;',
+      '  vFade=smoothstep(0.0,0.06,ph)*pow(1.0-ph,1.5)*(0.55+0.9*fract(aSeed.y*31.7));',
+      '  vHeat=(1.0-ph)*0.70;',
+      '  gl_Position=vec4(p*uPxS/uRes*2.0-1.0,0.0,1.0);',
+      '}'
+    ].join('\n');
+    var SFS = [
+      'precision highp float;',
+      'varying vec2 vUv; varying float vFade, vHeat; uniform float uGainC;',
+      'vec3 aces(vec3 x){ return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14),0.0,1.0); }',
+      'void main(){',
+      '  vec2 p=vUv*2.0-1.0;',
+      '  float cv=(1.0-smoothstep(0.16,1.0,abs(p.y)));',
+      '  cv*=cv*(1.0-smoothstep(0.25,1.0,abs(p.x)));',
+      '  vec3 c=mix(vec3(0.42,0.036,0.003),vec3(1.0,0.27,0.025),smoothstep(0.0,0.75,vHeat));',
+      '  c=mix(c,vec3(1.0,0.70,0.26),pow(vHeat,5.0));',
+      '  c=pow(aces(c*cv*vFade*uGainC*0.85),vec3(1.0/2.2));',
+      '  gl_FragColor=vec4(c,max(c.r,max(c.g,c.b)));',
+      '}'
+    ].join('\n');
+
+    function initGL() {
+      try {
+        gl = cv.getContext('webgl', { antialias: false, alpha: true, premultipliedAlpha: true, depth: false, stencil: false });
+        if (!gl) throw 0;
+        /* parallel compile: nothing is asked of a shader until both programs are linking */
+        var par = gl.getExtension('KHR_parallel_shader_compile');
+        var sh = function (type, src) {
+          var o = gl.createShader(type); gl.shaderSource(o, src); gl.compileShader(o);
+          if (!par && !gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o));
+          return o;
+        };
+        prog = gl.createProgram();
+        gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS));
+        gl.bindAttribLocation(prog, 0, 'a'); gl.linkProgram(prog);
+        sProg = gl.createProgram();
+        gl.attachShader(sProg, sh(gl.VERTEX_SHADER, SVS)); gl.attachShader(sProg, sh(gl.FRAGMENT_SHADER, SFS));
+        gl.bindAttribLocation(sProg, 0, 'aCorner'); gl.bindAttribLocation(sProg, 1, 'aSeed'); gl.linkProgram(sProg);
+        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
+        if (!gl.getProgramParameter(sProg, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(sProg));
+        ['uRes', 'uC', 'uPxS', 'uR', 'uF', 'uTime', 'uGain', 'uCalm'].forEach(function (n) { U[n] = gl.getUniformLocation(prog, n); });
+        ['uRes', 'uC', 'uPxS', 'uR', 'uF', 'uVF', 'uTime', 'uLife', 'uRise', 'uSize', 'uOn', 'uGainC'].forEach(function (n) { SU[n] = gl.getUniformLocation(sProg, n); });
+        buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+        /* three sets of cinders, seeded (mulberry32) so every load throws the same pattern */
+        var seed = 0x2f6b9d1;
+        var rnd = function () { seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+        [{ n: 220, life: 0.30, rise: 1.0, size: 1.5, gain: 5.0 },
+         { n: 110, life: 0.62, rise: 0.75, size: 2.1, gain: 2.6 },
+         { n: 40, life: 1.10, rise: 0.5, size: 2.8, gain: 1.1 }].forEach(function (o) {
+          var corner = new Float32Array(o.n * 8), sd = new Float32Array(o.n * 16), idx = new Uint16Array(o.n * 6);
+          for (var i = 0; i < o.n; i++) {
+            var s4 = [rnd() * Math.PI * 2, rnd(), 0.4 + rnd() * 1.2, 0.3 + rnd() * 0.7];
+            var cs = [-0.5, 0.5, 0.5, 0.5, -0.5, -0.5, 0.5, -0.5];
+            for (var v = 0; v < 4; v++) { corner.set([cs[v * 2], cs[v * 2 + 1]], (i * 4 + v) * 2); sd.set(s4, (i * 4 + v) * 4); }
+            idx.set([i * 4, i * 4 + 2, i * 4 + 1, i * 4 + 2, i * 4 + 3, i * 4 + 1], i * 6);
+          }
+          var bc = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bc); gl.bufferData(gl.ARRAY_BUFFER, corner, gl.STATIC_DRAW);
+          var bs = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bs); gl.bufferData(gl.ARRAY_BUFFER, sd, gl.STATIC_DRAW);
+          var bi = gl.createBuffer(); gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, bi); gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, idx, gl.STATIC_DRAW);
+          sets.push({ o: o, bc: bc, bs: bs, bi: bi, count: o.n * 6 });
+        });
+      } catch (e) { gl = null; }
+    }
+
+    function pace(now) {
+      var dt = last ? Math.min(1.5, Math.max(0, (now - last) / 1000)) : 0; last = now;
+      if (reduced) { F = 1; calm = 1; return; }
+      if (doneAt) {
+        /* into the hand-off: a Hermite from the spring's own speed to rest at the end of the stroke */
+        var k = Math.min(1, Math.max(0, (now - doneAt) / doneDur)), k2 = k * k, k3 = k2 * k;
+        F = F0 * (2 * k3 - 3 * k2 + 1) + M0 * (k3 - 2 * k2 + k) + (3 * k2 - 2 * k3);
+        calm = ss(0.35, 1, k);
+        if (k >= 1) hand();
+      } else {
+        var creep = 0.38 * (1 - Math.exp(-(now - t0) / 800));
+        var goal = Math.min(CEIL, 0.02 + 0.92 * Math.max(target, creep));
+        gW = Math.max(gW, goal); gW += (CEIL - gW) * (1 - Math.exp(-dt / 7));
+        for (var h = dt; h > 1e-6; h -= 1 / 120) {
+          var s = Math.min(h, 1 / 120);
+          vF = Math.min(VMAX, vF + (25 * (gW - F) - 10 * vF) * s);   /* omega 5/s */
+          if (F < CEIL - 1e-3) vF = Math.max(vF, VMIN);
+          F = Math.min(CEIL, F + vF * s);
+        }
+      }
+      if (dt > 0) velF += ((F - Fp) / dt - velF) * Math.min(1, dt * 8);
+      Fp = F;
+    }
+
+    function draw(now) {
+      var w = view.w, h = view.h, d = view.d, pw = Math.round(w * d), ph = Math.round(h * d), L = kbLayout(w, h);
+      if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; }
+      gl.viewport(0, 0, warming ? 1 : pw, warming ? 1 : ph);
+      var tSec = reduced ? 0 : (now - t0) / 1000;
+      var gain = reduced ? 1 : 0.18 + 0.82 * ss(0, 520, now - (f0 || now));
+      gl.useProgram(prog); gl.disable(gl.BLEND);
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+      gl.disableVertexAttribArray(1);
+      gl.uniform2f(U.uRes, pw, ph); gl.uniform2f(U.uC, L.cx, h - L.cy); gl.uniform1f(U.uPxS, d); gl.uniform1f(U.uR, L.R);
+      gl.uniform1f(U.uF, F); gl.uniform1f(U.uTime, tSec); gl.uniform1f(U.uGain, gain); gl.uniform1f(U.uCalm, calm);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+      if (!reduced) {
+        gl.useProgram(sProg); gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+        gl.uniform2f(SU.uRes, pw, ph); gl.uniform2f(SU.uC, L.cx, h - L.cy); gl.uniform1f(SU.uPxS, d); gl.uniform1f(SU.uR, L.R);
+        gl.uniform1f(SU.uF, F); gl.uniform1f(SU.uVF, Math.max(0, Math.min(0.8, velF))); gl.uniform1f(SU.uTime, tSec);
+        gl.uniform1f(SU.uOn, ss(0.15, 1, gain) * (1 - calm));
+        for (var i = 0; i < sets.length; i++) {
+          var st = sets[i], o = st.o;
+          gl.uniform1f(SU.uLife, o.life); gl.uniform1f(SU.uRise, o.rise); gl.uniform1f(SU.uSize, o.size); gl.uniform1f(SU.uGainC, o.gain);
+          gl.bindBuffer(gl.ARRAY_BUFFER, st.bc); gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
+          gl.bindBuffer(gl.ARRAY_BUFFER, st.bs); gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 0, 0);
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, st.bi);
+          gl.drawElements(gl.TRIANGLES, st.count, gl.UNSIGNED_SHORT, 0);
+        }
+        gl.disableVertexAttribArray(1);
+      }
+    }
+
+    function hand() {
+      if (handed) return; handed = true;
+      post({ kb: 'hand' });
+    }
+
+    /* Every pipeline is built before anything is seen: a real frame's draws into one pixel, waited on. */
+    function warmUp() {
+      warming = true;
+      try { draw(pnow()); } finally { warming = false; }
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    }
+
+    function frame(ts) {
+      if (!alive) return;
+      raf(frame);
+      var now = ts + OFF;
+      if (!f0) f0 = now;
+      pace(now);
+      if (reduced && dirty <= 0) return;   /* a still: drawn for its first few frames (a resized canvas can drop one), and again on resize */
+      dirty--;
+      draw(now);
+      if (!upSent) { upSent = true; post({ kb: 'up' }); }
+    }
+
+    var ctl = {
+      msg: function (m) {
+        if (m.kb === 'set') { target = Math.max(target, +m.p || 0); }
+        else if (m.kb === 'view') { view = m.view; dirty = 3; }
+        else if (m.kb === 'done') {
+          if (doneAt) return;
+          target = 1;
+          if (reduced) { hand(); return; }
+          doneAt = m.at; F0 = F;
+          var du = Math.max(0.002, 1 - F0), ds = Math.min(0.85, Math.max(0.35, 2.4 * du));
+          doneDur = ds * 1000;
+          M0 = Math.min(Math.max(vF, 0) * ds, 1.5 * du);   /* leave at the speed it had: no lurch */
+          setTimeout(hand, Math.max(0, doneAt + doneDur + 400 - pnow()));   /* rAF stalled */
+        }
+        else if (m.kb === 'stop') { alive = false; }   /* its last frame stays up while the page fades it */
+        else if (m.kb === 'free') { alive = false; if (gl && IN_W) { var x = gl.getExtension('WEBGL_lose_context'); if (x) x.loseContext(); } gl = null; }
+      }
+    };
+
+    initGL();
+    if (!gl) { post({ kb: 'fail' }); return ctl; }
+    warmUp();
+    raf(frame);
+    return ctl;
+  }
+
+  /* ---------------- the page side ---------------- */
+  var d = document, de = d.documentElement, root = null;
+  /* kb-boot: script is running but main.ts (which adds .js) has not yet. The no-JS chapter stills
+     (html:not(.js) .chapter in the CSS) stand down meanwhile, or the first paint under the loader would fetch
+     every poster JPEG ahead of the bundle; main.ts fetches only the stills near the reader. */
+  de.classList.add('kb-boot');
+  /* the module script runs before DOMContentLoaded: if it failed, the no-JS book (with its stills) is the page */
+  d.addEventListener('DOMContentLoaded', function () { if (!de.classList.contains('js')) de.classList.remove('kb-boot'); });
+  try {
+    var reduced = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+    var noGL = /[?&]webgl=0(&|$)/.test(location.search);
+    var t0 = performance.now(), target = 0;
+    var worker = null, wUrl = '', driver = null, cvs = null, up = false;
+    var doneCalled = false, settled = false, gone = false, handTimer = 0;
+    var viewNow = function () {
+      return { w: Math.max(1, innerWidth || screen.width), h: Math.max(1, innerHeight || screen.height), d: Math.min(1.5, devicePixelRatio || 1) };
+    };
+
+    root = d.createElement('div');
+    root.id = 'kb-loader';
+    root.innerHTML = '<div class="kb-bg"></div><div class="kb-vis" aria-hidden="true">'
+      + '<div class="kb-label"><span>Lighting the lantern</span><b>0</b></div></div>'
+      + '<p class="kb-sr" role="status">Loading</p>';
+    de.appendChild(root);
+    var vis = root.querySelector('.kb-vis'), label = root.querySelector('.kb-label'), num = label.querySelector('b');
+    var bg = root.querySelector('.kb-bg');
+    var place = function () { var v = viewNow(), L = kbLayout(v.w, v.h); label.style.top = Math.round(L.cy + L.R + 46) + 'px'; return L; };
+    place();
+
+    var onMsg = function (m) {
+      if (!m) return;
+      if (m.kb === 'up') { up = true; if (wUrl) { URL.revokeObjectURL(wUrl); wUrl = ''; } }
+      else if (m.kb === 'hand') settle();
+      else if (m.kb === 'fail') fallback();
+    };
+    var startLocal = function () {
+      cvs = d.createElement('canvas');
+      vis.insertBefore(cvs, label);
+      var ctl = KB(false, { canvas: cvs, reduced: reduced, view: viewNow(), t0: t0, origin: performance.timeOrigin, target: target, post: function (m) { setTimeout(function () { onMsg(m); }, 0); } });
+      driver = ctl;
+    };
+    var fallback = function () {
+      if (worker) { try { worker.terminate(); } catch (e) {} worker = null; }
+      if (cvs) { cvs.remove(); cvs = null; }
+      driver = null;
+      if (settled || gone) return;
+      startLocal();
+      if (doneCalled && driver) driver.msg({ kb: 'done', at: performance.now() });
+    };
+
+    if (!noGL) {
+      var canWorker = typeof Worker === 'function' && typeof OffscreenCanvas === 'function'
+        && typeof HTMLCanvasElement !== 'undefined' && 'transferControlToOffscreen' in HTMLCanvasElement.prototype;
+      if (canWorker) {
+        try {
+          cvs = d.createElement('canvas');
+          vis.insertBefore(cvs, label);
+          var off = cvs.transferControlToOffscreen();
+          var src = 'var kbLayout=' + kbLayout.toString() + ';\nvar KB=' + KB.toString() + ';\n'
+            + 'self.onmessage=function(e){var m=e.data||{};if(!m.kbInit)return;var c=KB(true,m);'
+            + 'self.onmessage=function(e){c.msg(e.data||{});};};';
+          wUrl = URL.createObjectURL(new Blob([src], { type: 'text/javascript' }));
+          worker = new Worker(wUrl);
+          worker.onmessage = function (e) { onMsg(e.data); };
+          worker.onerror = function (e) { if (e && e.preventDefault) e.preventDefault(); fallback(); };
+          worker.postMessage({ kbInit: 1, canvas: off, t0: t0, origin: performance.timeOrigin, reduced: reduced, view: viewNow(), target: 0 }, [off]);
+          driver = { msg: function (m) { if (worker) worker.postMessage(m); } };
+        } catch (e) {
+          if (worker) { try { worker.terminate(); } catch (x) {} }
+          worker = null; if (cvs) { cvs.remove(); cvs = null; }
+          startLocal();
+        }
+      } else startLocal();
+    }
+
+    var onProgress = function (e) {
+      var p = Math.max(0, Math.min(1, +(e && e.detail) || 0));
+      if (p <= target || doneCalled) return;
+      target = p;
+      num.textContent = String(Math.round(p * 100));
+      if (driver) driver.msg({ kb: 'set', p: p });
+    };
+    var onResize = function () { place(); if (driver) driver.msg({ kb: 'view', view: viewNow() }); };
+
+    var remove = function () {
+      if (gone) return; gone = true;
+      removeEventListener('loader:progress', onProgress);
+      removeEventListener('loader:done', onDone);
+      removeEventListener('resize', onResize);
+      if (root && root.parentNode) root.parentNode.removeChild(root);
+      /* the worker loses its context on its own thread now; it is terminated only once the page is hidden
+         (terminating it while the page is on screen held the main thread 55-240 ms) */
+      var w = worker;
+      if (w) {
+        w.postMessage({ kb: 'free' });
+        var end = function () { if (d.hidden) { w.terminate(); removeEventListener('visibilitychange', end); removeEventListener('pagehide', end); } };
+        addEventListener('visibilitychange', end); addEventListener('pagehide', end);
+      } else if (driver) driver.msg({ kb: 'stop' });
+      window.__kbLoader.state = 'gone';
+    };
+    var fadeOut = function (ms) {
+      root.style.transition = 'opacity ' + ms + 'ms linear';
+      root.style.opacity = '0';
+      setTimeout(remove, ms + 60);
+    };
+    /* the circle settles into the HUD mark (top-left) as the page shows through, then the overlay goes */
+    var settle = function (quick) {
+      if (settled || gone) return; settled = true;
+      clearTimeout(handTimer);
+      window.__kbLoader.state = 'settling';
+      if (driver) driver.msg({ kb: 'stop' });
+      if (quick === true || reduced || d.hidden || !cvs || !up || !cvs.animate) { fadeOut(reduced ? 250 : quick === true ? 260 : 200); return; }
+      var L = place(), mark = d.querySelector('[data-hud-mark], .hud__mark'), mx, my, ms;
+      var r = mark && mark.getBoundingClientRect();
+      if (r && r.width > 4) { mx = r.left + r.width / 2; my = r.top + r.height / 2; ms = Math.min(r.width, r.height); }
+      else { var g = Math.min(48, Math.max(16, innerWidth * 0.04)); ms = 40; mx = g + ms / 2; my = g + ms / 2; }
+      var k = ms * 0.38 / L.R, ease = 'cubic-bezier(0.22, 1, 0.36, 1)';
+      cvs.style.transformOrigin = L.cx + 'px ' + L.cy + 'px';
+      cvs.animate([{ transform: 'translate(0px,0px) scale(1)', opacity: 1 },
+                   { transform: 'translate(' + (mx - L.cx).toFixed(1) + 'px,' + (my - L.cy).toFixed(1) + 'px) scale(' + k.toFixed(4) + ')', opacity: 0.85 }],
+                  { duration: 600, easing: ease, fill: 'forwards' });
+      bg.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 560, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' });
+      setTimeout(function () { fadeOut(180); }, 600);
+    };
+    var onDone = function () {
+      if (doneCalled || gone) return;
+      doneCalled = true;
+      clearTimeout(safety);
+      target = 1; num.textContent = '100';
+      root.classList.add('lit');
+      window.__kbLoader.state = 'done';
+      /* Late (a slow link or CPU held the page past ~3 s): no run into the hand-off and no flight to the HUD mark,
+         both of which wait on worker round trips and timers the busy main thread delays; the overlay just fades
+         (an opacity transition the compositor runs while the world keeps loading behind the posters). */
+      if (d.hidden || !driver || performance.now() > 3000) { settle(true); return; }
+      driver.msg({ kb: 'done', at: performance.now() });
+      handTimer = setTimeout(settle, 1500);   /* should the fire have gone quiet, so do we */
+    };
+
+    addEventListener('loader:progress', onProgress);
+    addEventListener('loader:done', onDone);
+    addEventListener('resize', onResize);
+    /* if the page never says it is done, the loader goes anyway: about 4 s after navigation start (main.ts hands
+       over by 3.6 s, with chapter posters standing in for modules still loading), never sooner than 1.2 s from here */
+    var safety = setTimeout(onDone, Math.max(1200, 4000 - performance.now()));
+    window.__kbLoader = { state: 'loading', t0: t0 };
+  } catch (e) {
+    if (root && root.parentNode) root.parentNode.removeChild(root);
+    de.classList.remove('kb-boot');
+    window.__kbLoader = { state: 'gone', error: String(e) };
+  }
+})();
+</script>

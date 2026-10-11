@@ -1,0 +1,599 @@
+/*
+  Main-page pieces of the recruiter path: the Logbook overlay (dialog), the Workshop inspect caption,
+  and the Workshop DOM shelf (artifact buttons). Book material comes from logbook.css.
+*/
+
+/* ---------- Logbook overlay ---------- */
+html.lb-open { overflow: hidden; }
+
+.lb-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(8, 7, 6, 0);
+  transition: background-color 0.36s var(--ease-out);
+}
+.lb-overlay.is-open { background: rgba(8, 7, 6, 0.78); }
+.lb-overlay[hidden] { display: none; }
+
+.lb-overlay__scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 var(--gutter) 56px;
+  background:
+    radial-gradient(120% 70% at 50% 0%, #1d1b17 0%, var(--lb-frame) 60%);
+  color: var(--paper);
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity 0.36s var(--ease-out), transform 0.5s var(--ease-out);
+}
+.lb-overlay.is-open .lb-overlay__scroll { opacity: 1; transform: none; }
+
+.lb-overlay__bar {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  max-width: 1440px;
+  margin: 0 auto 24px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--lb-frame-line);
+  background: var(--lb-frame);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lb-frame-text);
+}
+.lb-overlay__label { display: flex; align-items: center; gap: 10px; margin: 0; color: var(--paper); }
+.lb-overlay__mark {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lantern);
+  box-shadow: 0 0 0 4px rgba(242, 169, 59, 0.16);
+}
+.lb-overlay__page {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  margin-left: auto;
+  color: var(--lb-frame-text);
+  text-decoration: underline;
+  text-decoration-color: rgba(243, 237, 226, 0.25);
+  text-underline-offset: 4px;
+}
+.lb-overlay__page:hover { color: var(--paper); }
+.lb-overlay__close {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 8px 0 16px;
+  border: 1px solid rgba(243, 237, 226, 0.22);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out);
+}
+.lb-overlay__close:hover { border-color: rgba(243, 237, 226, 0.5); background: rgba(243, 237, 226, 0.05); }
+.lb-overlay__close kbd {
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(243, 237, 226, 0.1);
+  font: inherit;
+  font-size: 10px;
+  color: var(--lb-frame-text);
+}
+.lb-overlay a:focus-visible,
+.lb-overlay button:focus-visible { outline: 2px solid var(--lantern); outline-offset: 3px; }
+
+/* In the overlay the sticky rail sits under the bar. */
+.lb-overlay .lb-rail { top: 88px; }
+.lb-overlay .lb-section,
+.lb-overlay .lb-entry { scroll-margin-top: 96px; }
+@media (max-width: 1279px) {
+  .lb-overlay .lb-rail { top: 64px; }
+  .lb-overlay .lb-section,
+  .lb-overlay .lb-entry { scroll-margin-top: 136px; }
+}
+@media (max-width: 759px) {
+  .lb-overlay__page { display: none; }
+  .lb-overlay__close { margin-left: auto; }
+  .lb-overlay__bar { margin-bottom: 0; }
+  .lb-overlay__scroll { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+  .lb-overlay .lb-rail { margin: 0 calc(-1 * var(--gutter)) 16px; padding: 0 var(--gutter); }
+  /* the tab row runs on to the screen edge, where its fade (logbook.css) reads as 'more this way' */
+  .lb-overlay .lb-rail__list { margin-right: calc(-1 * var(--gutter)); padding-right: var(--gutter); }
+}
+
+/* ---------- Workshop inspect caption ---------- */
+.inspect-card {
+  position: fixed;
+  z-index: 30;
+  top: 50%;
+  right: clamp(16px, 3.2vw, 48px);
+  width: min(400px, 34vw);
+  max-height: min(calc(100vh - 180px), 760px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: 3px;
+  color: var(--ink);
+  background:
+    radial-gradient(140% 110% at 50% 40%, transparent 62%, rgba(140, 100, 50, 0.12) 100%),
+    repeating-linear-gradient(0deg, rgba(90, 66, 34, 0.028) 0 1px, transparent 1px 5px),
+    repeating-linear-gradient(97deg, rgba(90, 66, 34, 0.022) 0 1px, transparent 1px 7px),
+    linear-gradient(175deg, #f6f1e7 0%, var(--paper) 50%, #ece3d2 100%);
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.25),
+    0 28px 70px -18px rgba(0, 0, 0, 0.7);
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  line-height: 1.55;
+  opacity: 0;
+  transform: translate(18px, -50%);
+  transition: opacity 0.32s var(--ease-out), transform 0.42s var(--ease-out);
+}
+.inspect-card.is-open { opacity: 1; transform: translate(0, -50%); }
+.inspect-card[hidden] { display: none; }
+.inspect-card__inner { padding: 26px 28px 22px; }
+.inspect-card__eyebrow {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 0 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--lb-rule);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--lb-accent);
+}
+.inspect-card__eyebrow span:last-child { color: var(--lb-ink-quiet); font-variant-numeric: tabular-nums; }
+.inspect-card__title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 500;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+  font-variation-settings: 'opsz' 48;
+}
+.inspect-card__title:focus { outline: none; }
+.inspect-card__why { margin: 0 0 14px; font-style: italic; color: var(--lb-ink-soft); }
+.inspect-card__meta { margin-bottom: 14px; padding: 12px 0; border-top: 1px solid var(--lb-rule); border-bottom: 1px solid var(--lb-rule); }
+.inspect-card__meta p { margin: 0; }
+.inspect-card__org {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.inspect-card__role { font-style: italic; color: var(--lb-ink-soft); line-height: 1.4; margin-top: 2px !important; }
+.inspect-card__when {
+  margin-top: 6px !important;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lb-ink-quiet);
+}
+.inspect-card__bullets { margin: 0 0 18px; padding: 0; list-style: none; }
+.inspect-card__bullets li { position: relative; padding-left: 16px; margin-bottom: 6px; line-height: 1.5; }
+.inspect-card__bullets li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.78em;
+  width: 7px;
+  height: 1px;
+  background: var(--lb-accent);
+}
+.inspect-card__bullets strong { font-weight: 600; }
+.inspect-card__skills { margin: 0 0 18px; }
+.inspect-card__skills div { padding: 7px 0; border-top: 1px solid var(--lb-rule); }
+.inspect-card__skills div:first-child { border-top: 0; padding-top: 0; }
+.inspect-card__skills dt {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--lb-ink-quiet);
+}
+.inspect-card__skills dd { margin: 0; }
+.inspect-card__actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.inspect-card__actions button {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 0.2s var(--ease-out), border-color 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+}
+.inspect-card__actions button:active { transform: translateY(1px); }
+.inspect-card__back { border: 0; background: var(--ink); color: var(--paper); }
+.inspect-card__back:hover { background: #34302a; }
+.inspect-card__log { border: 1px solid rgba(28, 27, 25, 0.3); background: transparent; color: var(--ink); }
+.inspect-card__log:hover { border-color: var(--ink); }
+.inspect-card button:focus-visible { outline: 2px solid var(--lantern); outline-offset: 3px; }
+
+@media (max-width: 759px) {
+  /* Bottom sheet: the artifact stays visible in the upper half. */
+  .inspect-card {
+    top: auto;
+    right: 0;
+    left: 0;
+    bottom: 0;
+    width: auto;
+    max-height: 56vh;
+    max-height: 56dvh;
+    border-radius: 14px 14px 0 0;
+    transform: translateY(24px);
+    font-size: 15px;
+  }
+  .inspect-card.is-open { transform: none; }
+  .inspect-card::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 10px auto 0;
+    border-radius: 2px;
+    background: rgba(28, 27, 25, 0.18);
+  }
+  .inspect-card__inner { padding: 14px 20px calc(18px + env(safe-area-inset-bottom)); }
+  .inspect-card__title { font-size: 24px; }
+  .inspect-card__actions { flex-wrap: nowrap; }
+  .inspect-card__actions button { flex: 1; padding: 0 10px; white-space: nowrap; font-size: 11px; }
+}
+
+/* ---------- Workshop DOM shelf (artifact buttons; compact so it fits the pinned chapter) ---------- */
+.shelf-index {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  width: 100%;
+  min-width: 0;
+  max-width: min(680px, calc(100vw - 2 * var(--gutter)));
+  margin-top: 8px;
+  /* contribute no intrinsic width to the host grid (the chips wrap to whatever width it gives us) */
+  contain: inline-size;
+}
+.shelf-index__label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(243, 237, 226, 0.78);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+}
+.shelf-index__list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.shelf-index__list button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px 0 12px;
+  border: 1px solid rgba(243, 237, 226, 0.16);
+  border-radius: 999px;
+  background: rgba(18, 15, 12, 0.66);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 15.5px;
+  cursor: pointer;
+  transition: border-color 0.2s var(--ease-out), background-color 0.2s var(--ease-out), color 0.2s var(--ease-out);
+}
+.shelf-index__list button::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border: 1px solid rgba(242, 169, 59, 0.75);
+  border-radius: 50%;
+  transition: background-color 0.2s var(--ease-out);
+}
+.shelf-index__list button:hover { border-color: rgba(242, 169, 59, 0.6); background: rgba(18, 15, 12, 0.82); }
+.shelf-index__list button[aria-pressed='true'] { border-color: var(--lantern); color: var(--lantern); }
+.shelf-index__list button[aria-pressed='true']::before { background: var(--lantern); }
+.shelf-index__list button:focus-visible { outline: 2px solid var(--lantern); outline-offset: 3px; }
+@media (max-width: 759px) {
+  .shelf-index { gap: 6px; }
+  .shelf-index__label { flex-basis: 100%; }
+  .shelf-index__list { gap: 6px; }
+  .shelf-index__list button { padding: 0 12px 0 10px; font-size: 14.5px; }
+}
+
+/* The footer (how to turn it + "Put it back") stays in reach and in view while the bullets scroll under it; when
+   there is more below, a fade and a small "More below" mark say so (.has-more, set by ui/logbook.ts). */
+.inspect-card__foot {
+  position: sticky;
+  bottom: -22px;
+  margin: 0 -28px -22px;
+  padding: 20px 28px 22px;
+  background: linear-gradient(rgba(239, 231, 216, 0), #efe7d8 18px);
+}
+.inspect-card__foot .inspect-card__hint { margin-bottom: 10px; }
+.inspect-card__more {
+  /* inside the footer's top padding, on paper: it never sits over a bullet line */
+  position: absolute;
+  left: 50%;
+  top: 1px;
+  margin: 0;
+  padding: 2px 10px 2px 9px;
+  line-height: 1.3;
+  border-radius: 999px;
+  background: rgba(28, 27, 25, 0.82);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition: opacity 0.25s var(--ease-out), transform 0.25s var(--ease-out);
+}
+.inspect-card__more::after { content: ' \2193'; }
+.inspect-card.has-more .inspect-card__foot {
+  background: linear-gradient(rgba(239, 231, 216, 0), #efe7d8 4px);
+  box-shadow: 0 -18px 22px -14px rgba(239, 231, 216, 0.95);
+}
+.inspect-card.has-more .inspect-card__more { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) {
+  .inspect-card__more { transition: none; }
+}
+@media (max-width: 759px) {
+  .inspect-card__foot {
+    bottom: calc(-18px - env(safe-area-inset-bottom));
+    margin: 0 -20px calc(-18px - env(safe-area-inset-bottom));
+    padding: 28px 20px calc(12px + env(safe-area-inset-bottom));
+  }
+  .inspect-card__foot .inspect-card__hint { margin-bottom: 8px; }
+  /* phones: the cue sits on a clear strip of paper above the hint, never over a half-hidden bullet line */
+  .inspect-card__more { top: 6px; }
+  .inspect-card.has-more .inspect-card__foot { background: #efe7d8; box-shadow: 0 -14px 16px -8px rgba(239, 231, 216, 0.98); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-overlay,
+  .lb-overlay__scroll,
+  .inspect-card { transition: none; transform: none; }
+  .inspect-card { transform: translateY(-50%); }
+  .inspect-card.is-open { transform: translateY(-50%); }
+}
+@media (prefers-reduced-motion: reduce) and (max-width: 759px) {
+  .inspect-card,
+  .inspect-card.is-open { transform: none; }
+}
+
+/* Printing with the Logbook open prints just the Logbook. */
+@media print {
+  html.lb-open body > :not(.lb-overlay) { display: none !important; }
+  html.lb-open, html.lb-open body { overflow: visible !important; }
+  .lb-overlay { position: static; background: none !important; }
+  .lb-overlay__scroll { position: static; overflow: visible; padding: 0; background: none; opacity: 1; transform: none; }
+  .lb-overlay__bar, .inspect-card, .shelf-index { display: none !important; }
+}
+.lb-overlay .lb-rail__title { display: none; }
+
+/* ---------- Workshop: inspect hint, dolly tag, current chip, copy that steps back ---------- */
+.inspect-card__hint {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.7;
+  letter-spacing: 0.04em;
+  color: var(--lb-ink-quiet);
+}
+.inspect-card__hint kbd {
+  display: inline-block;
+  min-width: 1.7em;
+  padding: 0 4px;
+  border: 1px solid rgba(28, 27, 25, 0.2);
+  border-radius: 4px;
+  font: inherit;
+  text-align: center;
+  color: var(--ink);
+}
+html.no-webgl .inspect-card__hint { display: none; }
+
+/* While a piece is in the hand the story copy steps back so the piece and the caption own the frame.
+   The chips stay in reach (and come back to full strength when they hold focus). */
+html.ws-inspecting .chapter--workshop .chapter__copy,
+html.ws-inspecting .chapter--workshop .shelf-index {
+  opacity: 0.08;
+  transition: opacity 0.4s var(--ease-out);
+}
+html.ws-inspecting .chapter--workshop .shelf-index:focus-within,
+html.ws-inspecting .chapter--workshop .shelf-index:hover { opacity: 1; }
+@media (max-width: 759px) {
+  /* phones: the lifted piece sits where the headline was, so the copy steps right out of its silhouette */
+  html.ws-inspecting .chapter--workshop .chapter__copy { opacity: 0; }
+}
+.chapter--workshop .chapter__copy,
+.chapter--workshop .shelf-index { transition: opacity 0.4s var(--ease-out); }
+html.no-webgl.ws-inspecting .chapter--workshop .chapter__copy { opacity: 0.35; }
+
+/* The pudding cup's DOM mirror (a hidden keepsake): a small lantern glint that breathes, so it reads as a placed
+   hint rather than a stray pixel. Hover/focus still brighten it (game.css). */
+.chapter--workshop .keep--hidden:not(.is-found) .keep__mark {
+  inline-size: 6px;
+  block-size: 6px;
+  background: var(--lantern);
+  box-shadow: 0 0 0 3px rgba(242, 169, 59, 0.12), 0 0 12px rgba(242, 169, 59, 0.7);
+  animation: ws-glint 3.6s ease-in-out infinite;
+}
+.chapter--workshop .keep--hidden:not(.is-found):hover .keep__mark,
+.chapter--workshop .keep--hidden:not(.is-found):focus-visible .keep__mark { animation: none; }
+@keyframes ws-glint {
+  0%, 100% { opacity: 0.3; transform: scale(0.85); }
+  50% { opacity: 0.9; transform: scale(1.25); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chapter--workshop .keep--hidden:not(.is-found) .keep__mark { animation: none; opacity: 0.6; }
+}
+html.ws-inspecting .chapter--workshop .keep--hidden { opacity: 0; transition: opacity 0.3s var(--ease-out); }
+
+/* Short landscape viewports (e.g. 1280x800): the copy and the chip block share the pinned frame, so the copy rides
+   higher and the chips lose their label (the chips themselves say what they are) rather than run into the body. */
+@media (min-width: 760px) and (max-height: 860px) {
+  .chapter--workshop [data-place='left-high'] .chapter__copy { margin-top: 0; }
+  .chapter--workshop .shelf-index { margin-top: 14px; }
+  .chapter--workshop .shelf-index__label { display: none; }
+}
+
+/* The piece's one-line 'why' under the chips: phones only, once the dolly is on the shelf (filled by ui/logbook.ts). */
+.shelf-index__why { display: none; }
+
+/* The piece the dolly is holding on: a lit chip (aria-current), distinct from the pressed one (in the hand). */
+.shelf-index__list button[aria-current='true']:not([aria-pressed='true']) {
+  border-color: rgba(242, 169, 59, 0.55);
+  background: rgba(40, 28, 16, 0.86);
+}
+.shelf-index__list button[aria-current='true']:not([aria-pressed='true'])::before {
+  background: rgba(242, 169, 59, 0.75);
+  box-shadow: 0 0 0 3px rgba(242, 169, 59, 0.16);
+}
+
+/* The dolly's tag: org, then role · dates, hung just above the piece. JS sets transform to the anchor point. */
+.shelf-tag {
+  position: fixed;
+  z-index: 12;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  max-width: min(360px, calc(100vw - 24px));
+  padding: 7px 14px 8px;
+  border: 1px solid rgba(242, 169, 59, 0.28);
+  border-radius: 10px;
+  background: rgba(16, 12, 9, 0.72);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  color: var(--paper);
+  text-align: center;
+  pointer-events: none;
+  translate: -50% calc(-100% - 14px);
+  opacity: 0;
+  transition: opacity 0.35s var(--ease-out);
+}
+.shelf-tag::after {
+  /* a short thread down to the piece */
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -13px;
+  width: 1px;
+  height: 12px;
+  background: linear-gradient(rgba(242, 169, 59, 0.5), rgba(242, 169, 59, 0));
+}
+.shelf-tag.is-on { opacity: 1; }
+.shelf-tag__org {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.shelf-tag__meta {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  line-height: 1.35;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: rgba(243, 237, 226, 0.72);
+}
+.shelf-tag.is-hover { border-color: rgba(242, 169, 59, 0.5); }
+html.no-webgl .shelf-tag,
+html.ws-inspecting .shelf-tag,
+html.lb-open .shelf-tag { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .shelf-tag,
+  .chapter--workshop .chapter__copy,
+  .chapter--workshop .shelf-index { transition: none; }
+}
+
+/* Phones (WebGL): the chips are one scrolling row, and once the dolly is on the shelf (.ws-shelf, t > 0.1) the
+   body folds away, so the piece gets a clear band between the headline and the journey bar. */
+@media (max-width: 759px) {
+  html:not(.no-webgl) .chapter--workshop .chapter__body {
+    max-height: 12em;
+    overflow: hidden;
+    transition: max-height 0.5s var(--ease-out), opacity 0.4s var(--ease-out), margin 0.5s var(--ease-out);
+  }
+  html:not(.no-webgl) .chapter--workshop.ws-shelf .chapter__body {
+    max-height: 0;
+    margin-top: 0 !important;
+    opacity: 0 !important;
+  }
+  html:not(.no-webgl) .chapter--workshop.ws-shelf .shelf-index__label { display: none; }
+  /* on the shelf the headline steps down to a running head, so the piece owns the middle of the screen */
+  html:not(.no-webgl) .chapter--workshop .chapter__title { transition: font-size 0.5s var(--ease-out); }
+  html:not(.no-webgl) .chapter--workshop.ws-shelf .chapter__title { font-size: 1.25rem; max-width: 26ch; }
+  html:not(.no-webgl) .chapter--workshop.ws-shelf .shelf-index__why {
+    display: block;
+    flex-basis: 100%;
+    /* one line, hung in the band below the chips without moving them (the negative margin cancels its height);
+       kept clear of the hidden-keepsake glint at the right */
+    min-height: 1.45em;
+    margin: 10px 0 calc(-1.45em - 10px);
+    padding-right: 52px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-style: italic;
+    line-height: 1.45;
+    color: rgba(243, 237, 226, 0.78);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+    opacity: 0;
+    transition: opacity 0.35s var(--ease-out);
+  }
+  html:not(.no-webgl) .chapter--workshop.ws-shelf .shelf-index__why.is-on { opacity: 1; }
+  html.ws-inspecting .chapter--workshop .shelf-index__why { opacity: 0 !important; }
+  html:not(.no-webgl) .chapter--workshop .shelf-index__list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    margin: -6px calc(-1 * var(--gutter));
+    padding: 6px var(--gutter);
+    /* edge fades only on a side that has more chips past it (ui/logbook.ts sets data-more-left / -right) */
+    --fade-l: 0px;
+    --fade-r: 0px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+  }
+  html:not(.no-webgl) .chapter--workshop .shelf-index__list[data-more-left] { --fade-l: 48px; }
+  html:not(.no-webgl) .chapter--workshop .shelf-index__list[data-more-right] { --fade-r: 56px; }
+  html:not(.no-webgl) .chapter--workshop .shelf-index__list::-webkit-scrollbar { display: none; }
+  html:not(.no-webgl) .chapter--workshop .shelf-index__list li { flex: none; }
+  .shelf-index__list button { white-space: nowrap; }
+  .shelf-tag { padding: 6px 12px 7px; }
+  .shelf-tag__org { font-size: 16px; }
+}
+@media (max-width: 759px) and (prefers-reduced-motion: reduce) {
+  html:not(.no-webgl) .chapter--workshop .chapter__body,
+  html:not(.no-webgl) .chapter--workshop .chapter__title { transition: none; }
+}

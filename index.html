@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en" data-tone="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Jiayi Zhu: The Long Way Here</title>
+    <meta name="description" content="Jiayi Zhu: born beside the Yangtze, studying math at the University of Washington, graduating June 2027. A small playable story and résumé." />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+    <!-- CJK faces subset to the glyphs the site uses (&text=): every CJK character in src/ and the HTML, computed by
+         script. Add a new CJK character to the copy? Add it here too, or it falls back to the system serif. -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&text=%E3%80%82%E4%B8%8A%E4%B9%8C%E4%B9%9D%E5%85%B1%E5%8E%9F%E5%9C%86%E5%A2%99%E5%A4%A9%E5%A4%B4%E5%BC%A0%E6%81%A9%E6%84%9F%E6%97%B6%E6%98%8E%E6%9C%88%E6%AD%A4%E6%B1%9F%E6%B5%B7%E6%B6%AF%E7%88%B1%E7%94%9F%E7%9B%B8%E7%AF%B7%E8%88%B9%E8%B0%85%E9%95%BF%E9%98%B4%E9%A9%AC%E9%BE%84%EF%BC%8C&display=swap" />
+    <!-- LOADER: the loader agent inlines the head-started worker boot here (fire-paper-loader). -->
+  </head>
+  <body>
+    <a class="skip-link" href="/logbook/" data-open="logbook" data-ui>Skip to the Logbook (résumé)</a>
+    <canvas id="world" aria-hidden="true"></canvas>
+    <div id="posters" aria-hidden="true"></div>
+    <div id="veil" aria-hidden="true"></div>
+    <div id="ui-root" data-ui></div>
+    <main id="story">
+<!--STORY-->
+    </main>
+    <noscript><section class="logbook-static"><h2>Logbook</h2><!--LOGBOOK--></section></noscript>
+    <div id="live" role="status" aria-live="polite" class="sr-only"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

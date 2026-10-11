@@ -1,0 +1,649 @@
+/* Game layer: keepsake mirrors, Satchel, Atlas, fast-travel smoke, pickup ember.
+   Material: rice paper and ink, one lantern accent (SPEC §5). No glass, no pills-as-decoration. */
+
+/* ---------- shared controls ---------- */
+.game-close {
+  inline-size: 44px;
+  block-size: 44px;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font: 400 30px/1 var(--font-display);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.game-close:hover { background: rgba(28, 27, 25, 0.07); }
+
+.game-btn {
+  min-block-size: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 2px;
+  background: var(--ink);
+  color: var(--paper);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.game-btn:hover { background: #33312d; }
+
+.game-link {
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: 400 12px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  text-decoration-color: rgba(28, 27, 25, 0.35);
+  cursor: pointer;
+}
+.game-link:hover { text-decoration-color: currentColor; }
+
+.keep:focus-visible,
+.game-close:focus-visible,
+.game-btn:focus-visible,
+.game-link:focus-visible,
+.atlas-st:focus-visible {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+}
+.satchel__panel:focus,
+.atlas__panel:focus { outline: none; }
+
+.mono { font-family: var(--font-mono); }
+
+/* ---------- keepsake mirrors (in each chapter section) ---------- */
+.keeps {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 12px;
+  max-inline-size: 42rem;
+  margin-block-start: 32px;
+}
+/* A keepsake mirror is a paper tag: a luggage-tag silhouette (pointed, punched end) on rice paper or ink paper
+   to match the frame's tone, an ink-stamp glyph of the object on the stub, the hint in italic. The tag shape is
+   drawn on ::before so the button keeps a plain box (and an unclipped focus ring). */
+.keep {
+  --scrim: rgba(22, 20, 17, 0.84);
+  --fg: var(--paper);
+  --edge: rgba(243, 237, 226, 0.3);
+  --stamp: rgba(243, 237, 226, 0.86);
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+  min-block-size: 44px;
+  padding: 7px 16px 7px 22px;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--fg);
+  font: italic 400 16px/1.35 var(--font-body);
+  text-align: start;
+  cursor: pointer;
+  transition: opacity 0.25s, color 0.25s;
+}
+[data-tone='dark'] .keep {
+  --scrim: rgba(244, 238, 226, 0.92);
+  --fg: var(--ink);
+  --edge: rgba(28, 27, 25, 0.3);
+  --stamp: rgba(28, 27, 25, 0.82);
+}
+.keep::before,
+.keep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  clip-path: polygon(11px 0, 100% 0, calc(100% - 2px) 22%, 100% 47%, calc(100% - 1.5px) 74%, 100% 100%, 11px 100%, 0 50%);
+}
+.keep::before {
+  /* the tag, with a punched eyelet at the point */
+  background: var(--scrim);
+  -webkit-mask: radial-gradient(circle at 10px 50%, transparent 2.6px, #000 3.2px);
+  mask: radial-gradient(circle at 10px 50%, transparent 2.6px, #000 3.2px);
+  box-shadow: inset 0 0 0 1px var(--edge);
+}
+.keep::after {
+  /* a hairline ink edge along the long sides only (the clip removes the box edge on the point) */
+  background:
+    linear-gradient(var(--edge), var(--edge)) top / 100% 1px no-repeat,
+    linear-gradient(var(--edge), var(--edge)) bottom / 100% 1px no-repeat;
+  transition: background 0.25s;
+}
+.keep:hover::after {
+  background:
+    linear-gradient(var(--lantern), var(--lantern)) top / 100% 1px no-repeat,
+    linear-gradient(var(--lantern), var(--lantern)) bottom / 100% 1px no-repeat;
+}
+.keep__mark {
+  display: inline-grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  flex: none;
+  padding-inline-end: 9px;
+  box-sizing: content-box;
+  /* the tag's stub: a dashed tear line between the stamp and the hint */
+  border-inline-end: 1px dashed var(--edge);
+  color: var(--stamp);
+}
+.keep__glyph {
+  inline-size: 22px;
+  block-size: 22px;
+}
+.keep:hover .keep__mark { color: var(--lantern); }
+.keep.is-found {
+  font-style: normal;
+}
+/* found: the stamp is inked in lantern, a chop pressed on the stub */
+.keep.is-found .keep__mark { color: var(--lantern); }
+.keep.is-found .keep__glyph {
+  filter: drop-shadow(0 0 5px rgba(242, 169, 59, 0.55));
+}
+.keep.is-found::after {
+  background:
+    linear-gradient(rgba(242, 169, 59, 0.75), rgba(242, 169, 59, 0.75)) top / 100% 1px no-repeat,
+    linear-gradient(rgba(242, 169, 59, 0.75), rgba(242, 169, 59, 0.75)) bottom / 100% 1px no-repeat;
+}
+
+/* Hidden keepsakes: a faint glint, still a real 44px button in the tab order. */
+.keep--hidden:not(.is-found) {
+  inline-size: 44px;
+  padding: 0;
+  justify-content: center;
+  margin-inline-start: auto;
+}
+.keep--hidden:not(.is-found)::before,
+.keep--hidden:not(.is-found)::after {
+  display: none;
+}
+.keep--hidden:not(.is-found) .keep__glyph {
+  display: none;
+}
+.keep--hidden:not(.is-found) .keep__mark {
+  inline-size: 5px;
+  block-size: 5px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: currentColor;
+  color: var(--fg);
+  opacity: 0.32;
+  box-shadow: 0 0 6px currentColor;
+  transition: opacity 0.3s, transform 0.3s;
+}
+.keep--hidden:not(.is-found):hover .keep__mark,
+.keep--hidden:not(.is-found):focus-visible .keep__mark {
+  opacity: 1;
+  background: var(--lantern);
+  box-shadow: 0 0 10px var(--lantern);
+  transform: scale(1.6);
+}
+
+/* ---------- satchel drawer ---------- */
+.satchel,
+.atlas {
+  position: fixed;
+  inset: 0;
+  pointer-events: auto;
+}
+.satchel { z-index: 40; }
+.atlas { z-index: 50; }
+.satchel[hidden],
+.atlas[hidden] { display: none; }
+
+.satchel__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(12, 12, 11, 0.5);
+  opacity: 0;
+  transition: opacity 0.32s var(--ease-out);
+}
+.satchel__panel {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  inline-size: min(440px, 100%);
+  display: flex;
+  flex-direction: column;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: -1px 0 0 rgba(28, 27, 25, 0.18), -30px 0 60px rgba(0, 0, 0, 0.28);
+  transform: translateX(104%);
+  transition: transform 0.42s var(--ease-out);
+}
+.satchel.is-open .satchel__scrim { opacity: 1; }
+.satchel.is-open .satchel__panel { transform: none; }
+
+.satchel__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: calc(24px + env(safe-area-inset-top)) 20px 14px 28px;
+}
+.satchel__title {
+  margin: 0;
+  font: 500 32px/1.1 var(--font-display);
+  letter-spacing: -0.01em;
+}
+.satchel__count {
+  margin: 6px 0 0;
+  font: 400 12px/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: rgba(28, 27, 25, 0.72);
+}
+.satchel__count [data-n] {
+  font: 500 15px/1 var(--font-mono);
+  color: var(--ink);
+}
+
+.satchel__list {
+  flex: 1;
+  margin: 0;
+  padding: 0 28px 28px;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.satchel__group {
+  margin-block: 18px 2px;
+  padding-block-start: 16px;
+  border-block-start: 1px solid rgba(28, 27, 25, 0.14);
+  font: 400 11px/1.4 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(28, 27, 25, 0.66);
+}
+.satchel__group:first-child { margin-block-start: 4px; }
+
+.sitem {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 0 14px;
+  padding-block: 12px;
+}
+/* each keepsake's own silhouette: faint ink while missing (SPEC §4.2), inked on a lantern chop once found */
+.sitem__mark {
+  display: grid;
+  place-items: center;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 3px;
+  color: rgba(28, 27, 25, 0.3);
+  background: rgba(28, 27, 25, 0.04);
+}
+.sitem__glyph {
+  inline-size: 28px;
+  block-size: 28px;
+}
+.sitem.is-found .sitem__mark {
+  color: var(--ink);
+  background: rgba(242, 169, 59, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(242, 169, 59, 0.7);
+}
+.sitem__title {
+  margin: 0;
+  font: 500 19px/1.3 var(--font-display);
+}
+.sitem__title--missing {
+  font: 400 11px/1.4 var(--font-mono);
+  letter-spacing: 0.06em;
+  color: rgba(28, 27, 25, 0.6);
+  padding-block-start: 3px;
+}
+.sitem__story {
+  margin: 6px 0 0;
+  font: 400 16px/1.55 var(--font-body);
+  color: rgba(28, 27, 25, 0.86);
+}
+.sitem__hint {
+  margin: 4px 0 0;
+  font: italic 400 17px/1.45 var(--font-body);
+  color: rgba(28, 27, 25, 0.78);
+}
+.sitem__go { margin-block-start: 2px; color: rgba(28, 27, 25, 0.72); }
+
+.satchel__foot {
+  padding: 12px 28px calc(14px + env(safe-area-inset-bottom));
+  border-block-start: 1px solid rgba(28, 27, 25, 0.14);
+}
+.satchel__reset .game-link { color: rgba(28, 27, 25, 0.68); }
+.satchel__confirm {
+  display: none;
+  margin: 6px 0 0;
+  font: italic 400 16px/1.45 var(--font-body);
+}
+.satchel__confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-block-start: 10px;
+}
+.satchel__reset[data-step='confirm'] > [data-reset] { display: none; }
+.satchel__reset[data-step='confirm'] .satchel__confirm { display: block; }
+
+/* ---------- atlas ---------- */
+.atlas {
+  background: var(--paper);
+  color: var(--ink);
+  opacity: 0;
+  transition: opacity 0.32s var(--ease-out);
+}
+.atlas.is-open { opacity: 1; }
+.atlas__panel {
+  block-size: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: calc(20px + env(safe-area-inset-top)) var(--gutter) calc(18px + env(safe-area-inset-bottom));
+  transform: translateY(10px);
+  transition: transform 0.5s var(--ease-out);
+}
+.atlas.is-open .atlas__panel { transform: none; }
+.atlas__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.atlas__title {
+  margin: 0;
+  font: 500 34px/1.05 var(--font-display);
+  letter-spacing: -0.01em;
+}
+.atlas__sub {
+  margin: 6px 0 0;
+  max-inline-size: 36rem;
+  font: italic 400 17px/1.4 var(--font-body);
+  color: rgba(28, 27, 25, 0.76);
+}
+.atlas__stage {
+  position: relative;
+  min-block-size: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  border-block: 1px solid rgba(28, 27, 25, 0.16);
+}
+.atlas__map { position: relative; overflow: hidden; }
+.atlas__canvas { display: block; }
+
+.atlas__stations { margin: 0; padding: 0; list-style: none; }
+.atlas-st {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: start;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.atlas-st__dot { inline-size: 44px; block-size: 44px; flex: none; }
+.atlas-st__label {
+  display: grid;
+  gap: 1px;
+  /* a soft paper plate under every label: route lines and fog never strike through the text */
+  padding: 3px 7px 4px;
+  border-radius: 4px;
+  background: rgba(243, 237, 226, 0.84);
+  box-shadow: 0 0 10px 4px rgba(243, 237, 226, 0.6);
+  text-shadow: 0 0 2px var(--paper), 0 0 4px var(--paper);
+}
+.atlas-st__name { font: 500 18px/1.2 var(--font-display); }
+.atlas-st__cjk { font: 400 18px/1 var(--font-seal); margin-inline-start: 4px; }
+.atlas-st__coords,
+.atlas-st__status {
+  font-size: 11px;
+  line-height: 1.35;
+  letter-spacing: 0.06em;
+  color: rgba(28, 27, 25, 0.74);
+}
+.atlas-st__status { color: rgba(28, 27, 25, 0.72); }
+.atlas-st:not(.is-visited) .atlas-st__name { color: rgba(28, 27, 25, 0.82); }
+.atlas-st:hover .atlas-st__name,
+.atlas-st:focus-visible .atlas-st__name {
+  text-decoration: underline;
+  text-decoration-color: var(--lantern);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 4px;
+}
+.atlas-st[aria-current='location'] .atlas-st__status { color: #8a5a12; }
+
+/* anchor: the 44px dot box is centred on the station point; the label hangs to one side */
+.atlas-st--right { transform: translate(-22px, -50%); }
+.atlas-st--left { transform: translate(calc(-100% + 22px), -50%); flex-direction: row-reverse; text-align: end; }
+.atlas-st--left .atlas-st__label { justify-items: end; }
+.atlas-st--below { transform: translate(-50%, -22px); flex-direction: column; text-align: center; }
+.atlas-st--below .atlas-st__label { justify-items: center; margin-block-start: 6px; }
+.atlas-st--above { transform: translate(-50%, calc(-100% + 22px)); flex-direction: column-reverse; text-align: center; }
+.atlas-st--above .atlas-st__label { justify-items: center; margin-block-end: -2px; }
+
+.atlas__lat {
+  position: absolute;
+  margin: 0;
+  transform: translate(-50%, 45%) rotate(var(--ang, 0rad));
+  transform-origin: 50% 0;
+  white-space: nowrap;
+  font: italic 400 16px/1 var(--font-body);
+  pointer-events: none;
+  padding: 4px 8px 5px;
+  border-radius: 4px;
+  background: rgba(243, 237, 226, 0.8);
+  box-shadow: 0 0 10px 4px rgba(243, 237, 226, 0.55);
+  text-shadow: 0 0 3px var(--paper), 0 0 8px var(--paper);
+}
+.atlas__lat .mono {
+  margin-inline-start: 8px;
+  font-style: normal;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(28, 27, 25, 0.78);
+}
+
+.atlas__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 32px;
+}
+.atlas__odo p { margin: 0; }
+.atlas__km-n {
+  font: 500 40px/1 var(--font-display);
+  font-variant-numeric: tabular-nums lining-nums;
+  letter-spacing: -0.01em;
+}
+.atlas__km-u { font: italic 400 18px/1 var(--font-body); color: rgba(28, 27, 25, 0.8); }
+.atlas__legs {
+  margin-block-start: 8px !important;
+  font-size: 11px;
+  line-height: 1.5;
+  letter-spacing: 0.06em;
+  color: rgba(28, 27, 25, 0.72);
+}
+.atlas__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 22px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: rgba(28, 27, 25, 0.76);
+}
+.atlas__legend li { display: inline-flex; align-items: center; gap: 8px; }
+.apin {
+  inline-size: 9px;
+  block-size: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(28, 27, 25, 0.62);
+  background: var(--paper);
+}
+.apin--found { border: 1px solid var(--ink); background: var(--lantern); }
+.fogkey {
+  inline-size: 20px;
+  block-size: 10px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #cfc4b2, #ddd4c4);
+}
+
+@media (max-width: 640px) {
+  .atlas__panel { gap: 10px; padding-inline: 16px; }
+  .atlas__title { font-size: 28px; }
+  .atlas__sub { font-size: 15px; }
+  .atlas__km-n { font-size: 30px; }
+  .atlas__km-u { font-size: 16px; }
+  .atlas__foot { gap: 10px; }
+  .atlas-st__name { font-size: 16px; }
+  .satchel__head { padding-inline-start: 20px; }
+  .satchel__list { padding-inline: 20px; }
+  .satchel__foot { padding-inline: 20px; }
+}
+
+/* ---------- fast-travel ink smoke ---------- */
+.ink-smoke {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  overflow: hidden;
+}
+.ink-smoke.is-on { visibility: visible; }
+.ink-smoke i {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  background: radial-gradient(130% 100% at var(--ox, 50%) var(--oy, 50%), #262420 0%, #121110 55%, #0b0a09 100%);
+}
+.ink-smoke span {
+  position: absolute;
+  left: var(--ox, 50%);
+  top: var(--oy, 50%);
+  inline-size: 46vmax;
+  block-size: 46vmax;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(14, 13, 12, 0.97) 0%, rgba(14, 13, 12, 0.82) 30%, rgba(14, 13, 12, 0.35) 52%, rgba(14, 13, 12, 0) 70%);
+  transform: translate(-50%, -50%) scale(0.15);
+  opacity: 0;
+}
+.ink-smoke span:nth-child(2) { margin: -9vmax 0 0 11vmax; }
+.ink-smoke span:nth-child(3) { margin: 12vmax 0 0 -8vmax; }
+.ink-smoke span:nth-child(4) { margin: -4vmax 0 0 -15vmax; }
+.ink-smoke span:nth-child(5) { margin: 10vmax 0 0 16vmax; }
+
+/* ---------- pickup ember ---------- */
+.ember-fly {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 80;
+  inline-size: 14px;
+  block-size: 14px;
+  margin: -7px 0 0 -7px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, #fff4dc 0%, #f2a93b 42%, rgba(242, 169, 59, 0) 72%);
+  box-shadow: 0 0 16px 5px rgba(242, 169, 59, 0.5);
+  opacity: 0;
+}
+.ember-fly--tail {
+  inline-size: 8px;
+  block-size: 8px;
+  margin: -4px 0 0 -4px;
+  box-shadow: 0 0 10px 3px rgba(242, 169, 59, 0.35);
+}
+.ember-ring {
+  position: fixed;
+  z-index: 80;
+  inline-size: 40px;
+  block-size: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--lantern);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+[data-open='satchel'].is-pulse { animation: satchel-pulse 0.6s var(--ease-out); }
+@keyframes satchel-pulse {
+  0% { color: var(--lantern); }
+  100% { color: inherit; }
+}
+
+/* Phones: several keepsake mirrors collapse into one compact row that scrolls sideways (the Workshop's shelf
+   index has its own row in logbook-overlay.css), so the chips never stack over the scene. */
+@media (max-width: 760px) {
+  .chapter:not(.chapter--workshop) .slot--hotspots.keeps:has(> .keep + .keep) {
+    flex-wrap: nowrap;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    /* room for the 3px focus ring inside the scroller */
+    padding: 6px 4px;
+    margin-inline: -4px;
+    -webkit-mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent 100%);
+    mask-image: linear-gradient(to right, #000 0, #000 calc(100% - 28px), transparent 100%);
+  }
+  .chapter:not(.chapter--workshop) .slot--hotspots.keeps:has(> .keep + .keep)::-webkit-scrollbar {
+    display: none;
+  }
+  .chapter:not(.chapter--workshop) .keeps:has(> .keep + .keep) > .keep {
+    flex: none;
+    max-inline-size: min(76vw, 300px);
+    padding: 6px 12px 6px 20px;
+    gap: 9px;
+    font-size: 14.5px;
+    line-height: 1.25;
+  }
+  .chapter:not(.chapter--workshop) .keeps:has(> .keep + .keep) > .keep--hidden:not(.is-found) {
+    padding: 0;
+    margin-inline-start: 0;
+  }
+  /* Seattle: three short hints wrap onto their own lines instead of a sideways row that cuts one mid-word */
+  .chapter.chapter--rain .slot--hotspots.keeps:has(> .keep + .keep) {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 6px;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .chapter.chapter--rain .keeps:has(> .keep + .keep) > .keep {
+    flex: 0 1 auto;
+    max-inline-size: 100%;
+    min-block-size: 44px;
+    font-size: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .satchel__scrim,
+  .satchel__panel,
+  .atlas,
+  .atlas__panel,
+  .keep,
+  .keep__mark { transition: none !important; }
+  .atlas__panel { transform: none; }
+  [data-open='satchel'].is-pulse { animation: none; color: var(--lantern); }
+}

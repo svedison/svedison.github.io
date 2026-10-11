@@ -1,0 +1,268 @@
+/* Ch.7 Next shore: arrival hold, keepsake tally, "Look closer", footer legibility.
+   Loaded by src/ui/tally.ts (JS only). The no-JS page keeps main.css's complete static layout. */
+
+/* ---- arrival hold: the last section gets real scroll room, so the dawn world arrives alone and the seed
+   visibly cracks, rises and unfurls before the copy scrolls up over the lower frame. The copy, tally and
+   colophon stay pinned to the foot of the section (main.css flex-end), so the extra height is open sky. */
+html.js .chapter--next {
+  padding-top: 85svh;
+}
+@media (max-width: 760px) {
+  html.js .chapter--next {
+    padding-top: 100svh;
+  }
+}
+
+/* ---- look closer: the keyboard / touch mirror of the seed under glass */
+.shore__look {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin: 6px 0 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg-2);
+  font: 400 12px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 6px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  transition: color var(--dur-ui) var(--ease-out), text-decoration-color var(--dur-ui) var(--ease-out);
+}
+.shore__look:hover {
+  color: var(--fg);
+  text-decoration-color: var(--lantern);
+}
+.shore__look span {
+  transition: transform var(--dur-ui) var(--ease-out);
+}
+.shore__look:hover span {
+  transform: translateX(3px);
+}
+
+/* ---- the foot of the page: tally + colophon over sand and water need their own ground for 11-12px mono */
+html.js .chapter--next .chapter__tail {
+  position: relative;
+  isolation: isolate;
+}
+html.js .chapter--next .chapter__tail::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: -8svh 0 0;
+  /* paper ground under the text column only; the glass on the spit (right) stays clear */
+  /* it ends before the resting boat and convoy (desktop x ~32-42rem), so they keep their glow */
+  background: linear-gradient(to right, rgba(243, 237, 226, 0.84) 0, rgba(243, 237, 226, 0.74) 26rem, rgba(243, 237, 226, 0) 42rem);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 22%);
+  pointer-events: none;
+}
+.chapter--next .colophon {
+  color: var(--fg);
+  text-shadow: none;
+}
+/* the colophon's rule stays short of the resting boat, so no line runs through it */
+.chapter--next .colophon::before {
+  width: min(100%, 28rem);
+  background: linear-gradient(to right, var(--rule) 60%, transparent);
+}
+
+/* ---- the HUD hand-off (tally.ts sets .is-hudfade and --hud-fy while a block is in the HUD band):
+   transparent above the HUD's lower edge, fully drawn 56px below it */
+html.js .chapter--next .is-hudfade {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent var(--hud-fy, -56px), #000 calc(var(--hud-fy, -56px) + 56px));
+  mask-image: linear-gradient(to bottom, transparent 0, transparent var(--hud-fy, -56px), #000 calc(var(--hud-fy, -56px) + 56px));
+}
+
+/* ---- portrait: the copy column is full width and scrolls up over the glass and the lanterns, so it carries its
+   own paper ground (the links never sit on a bright lantern or the cloche's glint). Soft top edge so the arrival
+   frame above it is not cut by a hard band. */
+@media (max-width: 760px) {
+  html.js .chapter--next .chapter__pin {
+    isolation: isolate;
+  }
+  html.js .chapter--next .chapter__pin::before {
+    content: '';
+    position: absolute;
+    z-index: -1;
+    inset: 0;
+    /* lighter, and it gathers only under the CTA lines: the headline and the well-being line read on the dawn sky
+       itself, so the glass, the sun and the lanterns stay a scene above the contact block, not a ghost */
+    background: rgba(243, 237, 226, 0.64);
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent min(150px, 20%), #000 min(320px, 40%));
+    mask-image: linear-gradient(to bottom, transparent 0, transparent min(150px, 20%), #000 min(320px, 40%));
+    pointer-events: none;
+  }
+  /* the tail's ground continues the copy's without a seam */
+  html.js .chapter--next .chapter__tail::before {
+    inset: 0;
+    background: rgba(243, 237, 226, 0.64);
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  /* a paper halo round each line carries the small mono and links over whatever glows behind them, so the ground
+     itself can stay light enough for the glass and lanterns to read as a scene */
+  html.js .chapter--next :is(.shore, .tally, .colophon) {
+    text-shadow: 0 0 6px rgba(243, 237, 226, 0.95), 0 0 14px rgba(243, 237, 226, 0.8);
+  }
+}
+.chapter--next .colophon__credits dt {
+  color: var(--fg-2);
+}
+/* the copyright closes the credits column (on the paper ground), not a stray label out on the sand by the glass */
+@media (min-width: 761px) {
+  .chapter--next .colophon {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+  .chapter--next .colophon__copy {
+    grid-column: 2;
+    margin-top: 4px;
+    color: var(--fg-2);
+  }
+}
+
+/* ---- tally */
+.tally {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px 40px;
+  max-width: 44rem;
+  padding: 22px 0 6px;
+  border-top: 1px solid var(--rule);
+  font: 400 12px/1.5 var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--fg);
+}
+.tally__count {
+  margin: 0;
+  white-space: nowrap;
+}
+.tally__count [data-count] {
+  font-family: var(--font-display);
+  font-size: 30px;
+  letter-spacing: 0;
+  line-height: 1;
+  font-variation-settings: 'opsz' 36;
+}
+.tally__of {
+  margin-right: 10px;
+  color: var(--fg-2);
+}
+.tally__lights {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 18px;
+}
+.tally__light {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--fg-2);
+}
+.tally__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid var(--fg-3);
+  transition: background-color var(--dur-ui), border-color var(--dur-ui), box-shadow var(--dur-ui);
+}
+.tally__light.is-on {
+  color: var(--fg);
+}
+.tally__light.is-on .tally__dot {
+  background: var(--c);
+  border-color: var(--c);
+  box-shadow: 0 0 10px var(--c);
+}
+.tally__actions {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 24px;
+}
+.tally__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg);
+  font: 400 12px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-decoration: underline;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 6px;
+  text-decoration-thickness: 1px;
+  cursor: pointer;
+  transition: text-decoration-color var(--dur-ui) var(--ease-out);
+}
+.tally__btn:hover {
+  text-decoration-color: var(--lantern);
+}
+.tally__btn--quiet {
+  color: var(--fg-2);
+  /* "Reset" is a short word: keep the hit target at least 44px wide */
+  min-inline-size: 44px;
+  justify-content: center;
+}
+.tally__btn--solid {
+  padding: 0 16px;
+  border-radius: 2px;
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+}
+.tally__btn--solid:hover {
+  background: #33312d;
+}
+.tally__btn:focus-visible,
+.shore__look:focus-visible {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+}
+.tally__confirm {
+  display: none;
+  margin: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+.tally__confirm-actions {
+  display: inline-flex;
+  gap: 18px;
+  align-items: center;
+}
+.tally__actions[data-step='confirm'] > [data-replay],
+.tally__actions[data-step='confirm'] > [data-reset] {
+  display: none;
+}
+.tally__actions[data-step='confirm'] .tally__confirm {
+  display: flex;
+}
+
+@media (max-width: 760px) {
+  .tally {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    padding-top: 18px;
+  }
+  .chapter--next .colophon {
+    font-size: 11.5px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shore__look span,
+  .tally__dot {
+    transition: none;
+  }
+}

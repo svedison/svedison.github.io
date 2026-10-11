@@ -1,0 +1,26 @@
+# Dependencies and build output
+node_modules/
+dist/
+
+# Visual QA output and logs
+shots/
+*.log
+*.stackdump
+
+# The source résumé carries the phone number and the Capgemini client name; only the
+# redacted public/Jiayi-Zhu-Resume.pdf (built from src/content/resume.ts) ships.
+/Atlassian-Data-Engineer-2027-Graduate-Resume.pdf
+
+# Local environment and OS noise
+.env
+.env.*
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Planning docs and agent tooling stay local: SPEC.md holds private details, and the
+# skills in .claude/ are third-party. .redact lists terms the résumé build must never emit.
+SPEC.md
+CLAUDE.md
+.claude/
+.redact

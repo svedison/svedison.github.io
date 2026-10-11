@@ -1,0 +1,1238 @@
+{
+  "date": "2026-10-11T03:24:23.723Z",
+  "backend": {
+    "kind": "hardware GPU",
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce RTX 2080 SUPER (0x00001E81) Direct3D11 vs_5_0 ps_5_0, D3D11)"
+  },
+  "chunks": [
+    {
+      "file": "assets/calmWater-Bb1jo-h8.js",
+      "raw": 6694,
+      "gzip": 2742
+    },
+    {
+      "file": "assets/coast-SWTXFPcj.js",
+      "raw": 51888,
+      "gzip": 20414
+    },
+    {
+      "file": "assets/crossing-BuDCYOBH.js",
+      "raw": 56144,
+      "gzip": 20775
+    },
+    {
+      "file": "assets/engine-CgjIqzC4.js",
+      "raw": 12838,
+      "gzip": 5594
+    },
+    {
+      "file": "assets/jiangyin-BiRrzrHA.js",
+      "raw": 58803,
+      "gzip": 23509
+    },
+    {
+      "file": "assets/logbook-BIlXGjU1.css",
+      "raw": 31466,
+      "gzip": 6702
+    },
+    {
+      "file": "assets/logbook-Bonr2C1s.js",
+      "raw": 216,
+      "gzip": 176
+    },
+    {
+      "file": "assets/logbook-CVa6lNhL.js",
+      "raw": 32907,
+      "gzip": 12476
+    },
+    {
+      "file": "assets/loop-BoYheBT0.js",
+      "raw": 37415,
+      "gzip": 14104
+    },
+    {
+      "file": "assets/main-DPbhyurl.css",
+      "raw": 77464,
+      "gzip": 16384
+    },
+    {
+      "file": "assets/main-vQrIAlO8.js",
+      "raw": 155899,
+      "gzip": 56336
+    },
+    {
+      "file": "assets/motion-D4ynsxxq.css",
+      "raw": 244,
+      "gzip": 153
+    },
+    {
+      "file": "assets/motion-DH6prcIH.js",
+      "raw": 126158,
+      "gzip": 48389
+    },
+    {
+      "file": "assets/next-0IjPhVZY.js",
+      "raw": 22772,
+      "gzip": 9687
+    },
+    {
+      "file": "assets/noise-DZOViNxY.js",
+      "raw": 2250,
+      "gzip": 938
+    },
+    {
+      "file": "assets/ocean-DBVZfnee.js",
+      "raw": 21134,
+      "gzip": 8372
+    },
+    {
+      "file": "assets/rain-Bqe1Syle.js",
+      "raw": 3984,
+      "gzip": 1813
+    },
+    {
+      "file": "assets/rain-DwECVTta.js",
+      "raw": 63184,
+      "gzip": 22051
+    },
+    {
+      "file": "assets/sky-UmVft4lj.js",
+      "raw": 22123,
+      "gzip": 8438
+    },
+    {
+      "file": "assets/three-DoFdcxVk.js",
+      "raw": 687215,
+      "gzip": 176510
+    },
+    {
+      "file": "assets/workshop-Chb6K0zZ.js",
+      "raw": 69876,
+      "gzip": 25845
+    },
+    {
+      "file": "index.html",
+      "raw": 61163,
+      "gzip": 18278
+    },
+    {
+      "file": "logbook/index.html",
+      "raw": 14015,
+      "gzip": 3953
+    }
+  ],
+  "passes": [
+    {
+      "name": "mobile",
+      "wallSec": 117,
+      "boot": {
+        "loaderDone": 14561.5,
+        "lcp": 2218.900000002235
+      },
+      "initialBytes": 2031489,
+      "initialList": [
+        {
+          "url": "/?perf=1",
+          "bytes": 18599
+        },
+        {
+          "url": "/assets/motion-D4ynsxxq.css",
+          "bytes": 524
+        },
+        {
+          "url": "/assets/logbook-BIlXGjU1.css",
+          "bytes": 7073
+        },
+        {
+          "url": "/assets/logbook-CVa6lNhL.js",
+          "bytes": 12824
+        },
+        {
+          "url": "/assets/main-DPbhyurl.css",
+          "bytes": 16798
+        },
+        {
+          "url": "/assets/motion-DH6prcIH.js",
+          "bytes": 48914
+        },
+        {
+          "url": "/assets/main-vQrIAlO8.js",
+          "bytes": 56760
+        },
+        {
+          "url": "/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap",
+          "bytes": 93019
+        },
+        {
+          "url": "blob:http://localhost:53603/5b3e1df3-6c0e-496d-a3f4-739921697baf",
+          "bytes": 0
+        },
+        {
+          "url": "/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwlBFgsAXHNk.woff2",
+          "bytes": 10087
+        },
+        {
+          "url": "/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1i8q131nj-o.woff2",
+          "bytes": 10079
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXadMPmDaZRbrw.woff2",
+          "bytes": 13267
+        },
+        {
+          "url": "/v1/forecast?latitude=47.655&longitude=-122.308&current=precipitation,rain,weather_code",
+          "bytes": 717
+        },
+        {
+          "url": "/posters/prologue-portrait.jpg",
+          "bytes": 31002
+        },
+        {
+          "url": "/posters/river-portrait.jpg",
+          "bytes": 57749
+        },
+        {
+          "url": "/posters/coast-portrait.jpg",
+          "bytes": 58125
+        },
+        {
+          "url": "/posters/workshop-portrait.jpg",
+          "bytes": 58112
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.118.woff2",
+          "bytes": 58204
+        },
+        {
+          "url": "/posters/rain-lake-portrait.jpg",
+          "bytes": 65013
+        },
+        {
+          "url": "/assets/engine-CgjIqzC4.js",
+          "bytes": 5933
+        },
+        {
+          "url": "/s/newsreader/v26/cY9XfjOCX1hbuyalUrK439vogqCz_goCYw7oRd6JFYYzbARA_n8.woff2",
+          "bytes": 63246
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.117.woff2",
+          "bytes": 66633
+        },
+        {
+          "url": "/posters/loop-portrait.jpg",
+          "bytes": 52987
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXaRMHsCoRTJKKTqxFXqIji1hn3wSpSEA3eSpJy0awdsFt2Zfc6SSE.117.woff2",
+          "bytes": 77417
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXaRMHsCoRTJKKTqxFXqIji1hn3wSpSEA3eSpJy0awdsFt2Zfc6SSE.116.woff2",
+          "bytes": 78733
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.109.woff2",
+          "bytes": 79125
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXaRMHsCoRTJKKTqxFXqIji1hn3wSpSEA3eSpJy0awdsFt2Zfc6SSE.112.woff2",
+          "bytes": 88403
+        },
+        {
+          "url": "/posters/crossing-portrait.jpg",
+          "bytes": 95096
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.112.woff2",
+          "bytes": 76077
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXaRMHsCoRTJKKTqxFXqIji1hn3wSpSEA3eSpJy0awdsFt2Zfc6SSE.105.woff2",
+          "bytes": 90059
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.105.woff2",
+          "bytes": 81573
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqOcaThrVMcaeccjhXXDsOyAEEmuIi6j7j64sLjgBtMI1z49XW4.119.woff2",
+          "bytes": 105094
+        },
+        {
+          "url": "/posters/next-portrait.jpg",
+          "bytes": 74865
+        },
+        {
+          "url": "/s/newsreader/v26/cY9AfjOCX1hbuyalUrK4397yjIJFJpc.woff2",
+          "bytes": 131895
+        },
+        {
+          "url": "/favicon.svg",
+          "bytes": 962
+        },
+        {
+          "url": "/assets/three-DoFdcxVk.js",
+          "bytes": 177519
+        },
+        {
+          "url": "/assets/noise-DZOViNxY.js",
+          "bytes": 1273
+        },
+        {
+          "url": "/assets/rain-Bqe1Syle.js",
+          "bytes": 2149
+        },
+        {
+          "url": "/assets/calmWater-Bb1jo-h8.js",
+          "bytes": 3077
+        },
+        {
+          "url": "/assets/sky-UmVft4lj.js",
+          "bytes": 8781
+        },
+        {
+          "url": "/assets/ocean-DBVZfnee.js",
+          "bytes": 8713
+        },
+        {
+          "url": "/assets/jiangyin-BiRrzrHA.js",
+          "bytes": 23870
+        },
+        {
+          "url": "/assets/crossing-BuDCYOBH.js",
+          "bytes": 21143
+        }
+      ],
+      "perChapter": {
+        "crossing:0.2": {
+          "bytes": 22450,
+          "files": [
+            "/assets/rain-DwECVTta.js (21.9 KB)"
+          ]
+        },
+        "coast:0.2": {
+          "bytes": 26221,
+          "files": [
+            "/assets/workshop-Chb6K0zZ.js (25.6 KB)"
+          ]
+        },
+        "rain:0.3": {
+          "bytes": 14447,
+          "files": [
+            "/assets/loop-BoYheBT0.js (14.1 KB)"
+          ]
+        },
+        "workshop:0.3": {
+          "bytes": 10025,
+          "files": [
+            "/assets/next-0IjPhVZY.js (9.8 KB)"
+          ]
+        }
+      },
+      "rows": [
+        {
+          "at": "prologue:0.3",
+          "owner": "jiangyin",
+          "reached": true,
+          "calls": 34,
+          "tris": 263974,
+          "shadowLights": 0,
+          "frames": 316,
+          "rafP50": 8.4,
+          "rafP95": 13.9,
+          "workP50": 6.6,
+          "workP95": 9.7,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 44.3,
+          "geometries": 41,
+          "textures": 27,
+          "programs": 97
+        },
+        {
+          "at": "prologue:0.7",
+          "owner": "jiangyin",
+          "reached": true,
+          "calls": 34,
+          "tris": 263974,
+          "shadowLights": 0,
+          "frames": 391,
+          "rafP50": 8.3,
+          "rafP95": 13.8,
+          "workP50": 5.2,
+          "workP95": 8.3,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 47.1,
+          "geometries": 41,
+          "textures": 27,
+          "programs": 97
+        },
+        {
+          "at": "river:0.3",
+          "owner": "jiangyin",
+          "reached": true,
+          "calls": 32,
+          "tris": 260848,
+          "shadowLights": 0,
+          "frames": 356,
+          "rafP50": 8.3,
+          "rafP95": 13.8,
+          "workP50": 5.5,
+          "workP95": 8.4,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 47.6,
+          "geometries": 41,
+          "textures": 28,
+          "programs": 97
+        },
+        {
+          "at": "river:0.7",
+          "owner": "jiangyin",
+          "reached": true,
+          "calls": 42,
+          "tris": 261588,
+          "shadowLights": 0,
+          "frames": 363,
+          "rafP50": 8.3,
+          "rafP95": 13.9,
+          "workP50": 6,
+          "workP95": 9.4,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 47.7,
+          "geometries": 47,
+          "textures": 31,
+          "programs": 100
+        },
+        {
+          "at": "crossing:0.2",
+          "owner": "crossing",
+          "reached": true,
+          "calls": 46,
+          "tris": 112116,
+          "shadowLights": 0,
+          "frames": 307,
+          "rafP50": 10.9,
+          "rafP95": 16.6,
+          "workP50": 6.8,
+          "workP95": 10.8,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 49.3,
+          "geometries": 48,
+          "textures": 31,
+          "programs": 131
+        },
+        {
+          "at": "crossing:0.5",
+          "owner": "crossing",
+          "reached": true,
+          "calls": 21,
+          "tris": 992,
+          "shadowLights": 0,
+          "frames": 510,
+          "rafP50": 5.6,
+          "rafP95": 8.4,
+          "workP50": 3.6,
+          "workP95": 5.4,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 54.8,
+          "geometries": 48,
+          "textures": 32,
+          "programs": 131
+        },
+        {
+          "at": "crossing:0.8",
+          "owner": "crossing",
+          "reached": true,
+          "calls": 47,
+          "tris": 112118,
+          "shadowLights": 0,
+          "frames": 314,
+          "rafP50": 8.4,
+          "rafP95": 14,
+          "workP50": 6.2,
+          "workP95": 10,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 53.9,
+          "geometries": 49,
+          "textures": 32,
+          "programs": 131
+        },
+        {
+          "at": "coast:0.2",
+          "owner": "coast",
+          "reached": true,
+          "calls": 35,
+          "tris": 206944,
+          "shadowLights": 0,
+          "frames": 389,
+          "rafP50": 8.3,
+          "rafP95": 13.8,
+          "workP50": 5,
+          "workP95": 8.2,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 57.3,
+          "geometries": 75,
+          "textures": 40,
+          "programs": 197
+        },
+        {
+          "at": "coast:0.5",
+          "owner": "coast",
+          "reached": true,
+          "calls": 44,
+          "tris": 207734,
+          "shadowLights": 0,
+          "frames": 371,
+          "rafP50": 8.3,
+          "rafP95": 13.8,
+          "workP50": 5.4,
+          "workP95": 8.1,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 55.9,
+          "geometries": 81,
+          "textures": 41,
+          "programs": 197
+        },
+        {
+          "at": "coast:0.8",
+          "owner": "coast",
+          "reached": true,
+          "calls": 53,
+          "tris": 208856,
+          "shadowLights": 0,
+          "frames": 355,
+          "rafP50": 8.4,
+          "rafP95": 13.8,
+          "workP50": 5.5,
+          "workP95": 8.2,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 60.9,
+          "geometries": 85,
+          "textures": 41,
+          "programs": 197
+        },
+        {
+          "at": "rain:0.3",
+          "owner": "rain",
+          "reached": true,
+          "calls": 37,
+          "tris": 72692,
+          "shadowLights": 0,
+          "frames": 419,
+          "rafP50": 8.3,
+          "rafP95": 11.1,
+          "workP50": 4.5,
+          "workP95": 6.9,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 43,
+          "geometries": 139,
+          "textures": 41,
+          "programs": 203
+        },
+        {
+          "at": "rain:0.7",
+          "owner": "rain",
+          "reached": true,
+          "calls": 33,
+          "tris": 31990,
+          "shadowLights": 0,
+          "frames": 470,
+          "rafP50": 5.6,
+          "rafP95": 11.1,
+          "workP50": 4,
+          "workP95": 5.9,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 41.1,
+          "geometries": 141,
+          "textures": 41,
+          "programs": 203
+        },
+        {
+          "at": "workshop:0.3",
+          "owner": "workshop",
+          "reached": true,
+          "calls": 26,
+          "tris": 8900,
+          "shadowLights": 1,
+          "frames": 309,
+          "rafP50": 8.4,
+          "rafP95": 13.9,
+          "workP50": 5.9,
+          "workP95": 8.4,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 40.7,
+          "geometries": 195,
+          "textures": 46,
+          "programs": 240
+        },
+        {
+          "at": "workshop:0.7",
+          "owner": "workshop",
+          "reached": true,
+          "calls": 32,
+          "tris": 7640,
+          "shadowLights": 1,
+          "frames": 359,
+          "rafP50": 8.4,
+          "rafP95": 13.9,
+          "workP50": 5.5,
+          "workP95": 8.4,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 42.8,
+          "geometries": 212,
+          "textures": 47,
+          "programs": 244
+        },
+        {
+          "at": "loop:0.3",
+          "owner": "loop",
+          "reached": true,
+          "calls": 8,
+          "tris": 43560,
+          "shadowLights": 0,
+          "frames": 543,
+          "rafP50": 5.6,
+          "rafP95": 8.4,
+          "workP50": 3,
+          "workP95": 3.8,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 44.9,
+          "geometries": 229,
+          "textures": 49,
+          "programs": 245
+        },
+        {
+          "at": "loop:0.7",
+          "owner": "loop",
+          "reached": true,
+          "calls": 8,
+          "tris": 43560,
+          "shadowLights": 0,
+          "frames": 585,
+          "rafP50": 5.5,
+          "rafP95": 8.4,
+          "workP50": 2.9,
+          "workP95": 3.6,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 42.9,
+          "geometries": 229,
+          "textures": 49,
+          "programs": 245
+        },
+        {
+          "at": "next:0.3",
+          "owner": "next",
+          "reached": true,
+          "calls": 41,
+          "tris": 61096,
+          "shadowLights": 0,
+          "frames": 470,
+          "rafP50": 5.6,
+          "rafP95": 11.1,
+          "workP50": 4,
+          "workP95": 6,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 46.6,
+          "geometries": 260,
+          "textures": 52,
+          "programs": 245
+        },
+        {
+          "at": "next:0.7",
+          "owner": "next",
+          "reached": true,
+          "calls": 45,
+          "tris": 61490,
+          "shadowLights": 0,
+          "frames": 426,
+          "rafP50": 8.2,
+          "rafP95": 11.1,
+          "workP50": 4.4,
+          "workP95": 7,
+          "tier": "medium",
+          "dpr": 1.5,
+          "heapMB": 42.5,
+          "geometries": 262,
+          "textures": 52,
+          "programs": 245
+        }
+      ],
+      "errors": []
+    },
+    {
+      "name": "desktop",
+      "wallSec": 96,
+      "boot": {
+        "loaderDone": 1074.699999999255,
+        "lcp": 228
+      },
+      "initialBytes": 2453251,
+      "initialList": [
+        {
+          "url": "/?perf=1",
+          "bytes": 18599
+        },
+        {
+          "url": "/assets/motion-D4ynsxxq.css",
+          "bytes": 524
+        },
+        {
+          "url": "/assets/logbook-BIlXGjU1.css",
+          "bytes": 7073
+        },
+        {
+          "url": "/assets/main-DPbhyurl.css",
+          "bytes": 16798
+        },
+        {
+          "url": "/assets/logbook-CVa6lNhL.js",
+          "bytes": 12824
+        },
+        {
+          "url": "/assets/main-vQrIAlO8.js",
+          "bytes": 56760
+        },
+        {
+          "url": "/assets/motion-DH6prcIH.js",
+          "bytes": 48914
+        },
+        {
+          "url": "/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Mono:wght@400;500&family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600&display=swap",
+          "bytes": 92993
+        },
+        {
+          "url": "/posters/prologue.jpg",
+          "bytes": 68905
+        },
+        {
+          "url": "/posters/river.jpg",
+          "bytes": 111752
+        },
+        {
+          "url": "/posters/crossing.jpg",
+          "bytes": 158269
+        },
+        {
+          "url": "/posters/coast.jpg",
+          "bytes": 172551
+        },
+        {
+          "url": "/posters/rain-lake.jpg",
+          "bytes": 118854
+        },
+        {
+          "url": "/posters/workshop.jpg",
+          "bytes": 72490
+        },
+        {
+          "url": "/posters/loop.jpg",
+          "bytes": 76199
+        },
+        {
+          "url": "/posters/next.jpg",
+          "bytes": 58612
+        },
+        {
+          "url": "/s/ibmplexmono/v20/-F63fjptAgt5VM-kVkqdyU8n1i8q1w.woff2",
+          "bytes": 14735
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXadMPmDQ.woff2",
+          "bytes": 13267
+        },
+        {
+          "url": "/s/ibmplexmono/v20/-F6qfjptAgt5VM-kVkqdyU8n3twJwlBFgg.woff2",
+          "bytes": 14915
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXaRMGEFoZJFdX0wQ5Xo5Hr21L9zCcRFhbSe5Nk0pIMuUkHEA.117.woff2",
+          "bytes": 77433
+        },
+        {
+          "url": "blob:http://localhost:53603/e171ebbe-00b2-4844-acc4-546fb145dab1",
+          "bytes": 0
+        },
+        {
+          "url": "/assets/engine-CgjIqzC4.js",
+          "bytes": 5933
+        },
+        {
+          "url": "/assets/three-DoFdcxVk.js",
+          "bytes": 177519
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.118.woff2",
+          "bytes": 58258
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.117.woff2",
+          "bytes": 66693
+        },
+        {
+          "url": "/s/newsreader/v26/cY9XfjOCX1hbuyalUrK439vogqCz_goCYw7oRd6JFYYzbA.woff2",
+          "bytes": 63326
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.109.woff2",
+          "bytes": 79087
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXaRMGEFoZJFdX0wQ5Xo5Hr21L9zCcRFhbSe5Nk0pIMuUkHEA.105.woff2",
+          "bytes": 90063
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXaRMGEFoZJFdX0wQ5Xo5Hr21L9zCcRFhbSe5Nk0pIMuUkHEA.116.woff2",
+          "bytes": 78785
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.119.woff2",
+          "bytes": 105006
+        },
+        {
+          "url": "/s/mashanzheng/v18/NaPecZTRCLxvwo41b4gvzkXaRMGEFoZJFdX0wQ5Xo5Hr21L9zCcRFhbSe5Nk0pIMuUkHEA.112.woff2",
+          "bytes": 88433
+        },
+        {
+          "url": "/s/newsreader/v26/cY9AfjOCX1hbuyalUrK4397yjA.woff2",
+          "bytes": 132047
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.116.woff2",
+          "bytes": 67348
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.112.woff2",
+          "bytes": 76041
+        },
+        {
+          "url": "/s/notoserifsc/v36/H4chBXePl9DZ0Xe7gG9cyOj7oqP0dTpxZbB9E9gjjmzKvaeKHUTtJDWv3z-us4bxD8F5og.105.woff2",
+          "bytes": 81561
+        },
+        {
+          "url": "/assets/calmWater-Bb1jo-h8.js",
+          "bytes": 3077
+        },
+        {
+          "url": "/assets/noise-DZOViNxY.js",
+          "bytes": 1273
+        },
+        {
+          "url": "/assets/rain-Bqe1Syle.js",
+          "bytes": 2149
+        },
+        {
+          "url": "/assets/sky-UmVft4lj.js",
+          "bytes": 8781
+        },
+        {
+          "url": "/assets/jiangyin-BiRrzrHA.js",
+          "bytes": 23870
+        },
+        {
+          "url": "/assets/crossing-BuDCYOBH.js",
+          "bytes": 21143
+        },
+        {
+          "url": "/assets/ocean-DBVZfnee.js",
+          "bytes": 8713
+        },
+        {
+          "url": "/favicon.svg",
+          "bytes": 962
+        },
+        {
+          "url": "/v1/forecast?latitude=47.655&longitude=-122.308&current=precipitation,rain,weather_code",
+          "bytes": 716
+        }
+      ],
+      "perChapter": {
+        "crossing:0.2": {
+          "bytes": 22450,
+          "files": [
+            "/assets/rain-DwECVTta.js (21.9 KB)"
+          ]
+        },
+        "coast:0.2": {
+          "bytes": 26221,
+          "files": [
+            "/assets/workshop-Chb6K0zZ.js (25.6 KB)"
+          ]
+        },
+        "rain:0.3": {
+          "bytes": 14447,
+          "files": [
+            "/assets/loop-BoYheBT0.js (14.1 KB)"
+          ]
+        },
+        "workshop:0.3": {
+          "bytes": 10025,
+          "files": [
+            "/assets/next-0IjPhVZY.js (9.8 KB)"
+          ]
+        }
+      },
+      "rows": [
+        {
+          "at": "prologue:0.3",
+          "owner": "jiangyin",
+          "reached": true,
+          "calls": 38,
+          "tris": 402534,
+          "shadowLights": 0,
+          "frames": 959,
+          "rafP50": 2.8,
+          "rafP95": 5.6,
+          "workP50": 2.4,
+          "workP95": 3,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 55,
+          "geometries": 41,
+          "textures": 27,
+          "programs": 98
+        },
+        {
+          "at": "prologue:0.7",
+          "owner": "jiangyin",
+          "reached": true,
+          "calls": 38,
+          "tris": 402534,
+          "shadowLights": 0,
+          "frames": 982,
+          "rafP50": 2.8,
+          "rafP95": 5.6,
+          "workP50": 2.4,
+          "workP95": 3,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 58.6,
+          "geometries": 41,
+          "textures": 27,
+          "programs": 98
+        },
+        {
+          "at": "river:0.3",
+          "owner": "jiangyin",
+          "reached": true,
+          "calls": 41,
+          "tris": 397362,
+          "shadowLights": 0,
+          "frames": 713,
+          "rafP50": 5.5,
+          "rafP95": 5.6,
+          "workP50": 3.5,
+          "workP95": 4.2,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 48.8,
+          "geometries": 46,
+          "textures": 29,
+          "programs": 99
+        },
+        {
+          "at": "river:0.7",
+          "owner": "jiangyin",
+          "reached": true,
+          "calls": 45,
+          "tris": 397820,
+          "shadowLights": 0,
+          "frames": 703,
+          "rafP50": 5.5,
+          "rafP95": 5.6,
+          "workP50": 3.6,
+          "workP95": 4.2,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 48.9,
+          "geometries": 48,
+          "textures": 31,
+          "programs": 101
+        },
+        {
+          "at": "crossing:0.2",
+          "owner": "crossing",
+          "reached": true,
+          "calls": 46,
+          "tris": 172452,
+          "shadowLights": 0,
+          "frames": 684,
+          "rafP50": 5.5,
+          "rafP95": 5.6,
+          "workP50": 3.7,
+          "workP95": 4.3,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 50.3,
+          "geometries": 49,
+          "textures": 31,
+          "programs": 132
+        },
+        {
+          "at": "crossing:0.5",
+          "owner": "crossing",
+          "reached": true,
+          "calls": 22,
+          "tris": 1042,
+          "shadowLights": 0,
+          "frames": 876,
+          "rafP50": 2.8,
+          "rafP95": 5.6,
+          "workP50": 2.8,
+          "workP95": 3,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 52.4,
+          "geometries": 49,
+          "textures": 32,
+          "programs": 132
+        },
+        {
+          "at": "crossing:0.8",
+          "owner": "crossing",
+          "reached": true,
+          "calls": 47,
+          "tris": 172454,
+          "shadowLights": 0,
+          "frames": 745,
+          "rafP50": 2.9,
+          "rafP95": 5.6,
+          "workP50": 3.4,
+          "workP95": 3.9,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 49.7,
+          "geometries": 50,
+          "textures": 32,
+          "programs": 132
+        },
+        {
+          "at": "coast:0.2",
+          "owner": "coast",
+          "reached": true,
+          "calls": 63,
+          "tris": 436078,
+          "shadowLights": 0,
+          "frames": 661,
+          "rafP50": 5.5,
+          "rafP95": 5.6,
+          "workP50": 3.9,
+          "workP95": 4.5,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 57.9,
+          "geometries": 76,
+          "textures": 45,
+          "programs": 206
+        },
+        {
+          "at": "coast:0.5",
+          "owner": "coast",
+          "reached": true,
+          "calls": 88,
+          "tris": 438444,
+          "shadowLights": 0,
+          "frames": 625,
+          "rafP50": 5.5,
+          "rafP95": 5.7,
+          "workP50": 4.2,
+          "workP95": 4.6,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 53.2,
+          "geometries": 82,
+          "textures": 46,
+          "programs": 206
+        },
+        {
+          "at": "coast:0.8",
+          "owner": "coast",
+          "reached": true,
+          "calls": 102,
+          "tris": 440016,
+          "shadowLights": 0,
+          "frames": 598,
+          "rafP50": 5.5,
+          "rafP95": 5.7,
+          "workP50": 4.4,
+          "workP95": 4.9,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 51.9,
+          "geometries": 86,
+          "textures": 46,
+          "programs": 206
+        },
+        {
+          "at": "rain:0.3",
+          "owner": "rain",
+          "reached": true,
+          "calls": 38,
+          "tris": 112124,
+          "shadowLights": 0,
+          "frames": 889,
+          "rafP50": 2.8,
+          "rafP95": 5.6,
+          "workP50": 2.7,
+          "workP95": 3,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 54.8,
+          "geometries": 141,
+          "textures": 46,
+          "programs": 212
+        },
+        {
+          "at": "rain:0.7",
+          "owner": "rain",
+          "reached": true,
+          "calls": 33,
+          "tris": 66298,
+          "shadowLights": 0,
+          "frames": 1072,
+          "rafP50": 2.8,
+          "rafP95": 2.9,
+          "workP50": 2.2,
+          "workP95": 2.4,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 53.7,
+          "geometries": 143,
+          "textures": 46,
+          "programs": 212
+        },
+        {
+          "at": "workshop:0.3",
+          "owner": "workshop",
+          "reached": true,
+          "calls": 36,
+          "tris": 15888,
+          "shadowLights": 1,
+          "frames": 614,
+          "rafP50": 5.5,
+          "rafP95": 8.4,
+          "workP50": 3.7,
+          "workP95": 6.6,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 55.5,
+          "geometries": 202,
+          "textures": 52,
+          "programs": 251
+        },
+        {
+          "at": "workshop:0.7",
+          "owner": "workshop",
+          "reached": true,
+          "calls": 51,
+          "tris": 12332,
+          "shadowLights": 1,
+          "frames": 626,
+          "rafP50": 5.5,
+          "rafP95": 8.4,
+          "workP50": 3.7,
+          "workP95": 6.2,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 56.8,
+          "geometries": 223,
+          "textures": 52,
+          "programs": 255
+        },
+        {
+          "at": "loop:0.3",
+          "owner": "loop",
+          "reached": true,
+          "calls": 8,
+          "tris": 139356,
+          "shadowLights": 0,
+          "frames": 1085,
+          "rafP50": 2.8,
+          "rafP95": 2.9,
+          "workP50": 1,
+          "workP95": 1.2,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 60,
+          "geometries": 231,
+          "textures": 54,
+          "programs": 255
+        },
+        {
+          "at": "loop:0.7",
+          "owner": "loop",
+          "reached": true,
+          "calls": 8,
+          "tris": 139356,
+          "shadowLights": 0,
+          "frames": 1085,
+          "rafP50": 2.8,
+          "rafP95": 2.9,
+          "workP50": 1,
+          "workP95": 1.4,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 61.1,
+          "geometries": 231,
+          "textures": 54,
+          "programs": 255
+        },
+        {
+          "at": "next:0.3",
+          "owner": "next",
+          "reached": true,
+          "calls": 45,
+          "tris": 129410,
+          "shadowLights": 0,
+          "frames": 1086,
+          "rafP50": 2.8,
+          "rafP95": 2.9,
+          "workP50": 1.9,
+          "workP95": 2.1,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 58.8,
+          "geometries": 265,
+          "textures": 57,
+          "programs": 255
+        },
+        {
+          "at": "next:0.7",
+          "owner": "next",
+          "reached": true,
+          "calls": 49,
+          "tris": 129804,
+          "shadowLights": 0,
+          "frames": 1085,
+          "rafP50": 2.8,
+          "rafP95": 2.9,
+          "workP50": 1.9,
+          "workP95": 2.1,
+          "tier": "high",
+          "dpr": 2,
+          "heapMB": 56.7,
+          "geometries": 267,
+          "textures": 57,
+          "programs": 255
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

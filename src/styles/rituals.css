@@ -1,0 +1,758 @@
+/* The two rituals: Forgive (rain chapter) and the Loop (loop chapter). Owned by ui/forgive.ts + ui/loopUI.ts.
+   Material: rice paper, ink, one lantern accent; the three light colours only on the lights themselves. */
+
+/* ================================================================ Forgive */
+.forgive {
+  position: relative;
+  /* The chapter's pinned copy (and its hotspot buttons) fades out by ~0.95 viewports into the section; this lead
+     keeps the sheet's top edge below the fold until then, so the paper never slides over live copy or targets. */
+  padding-top: 50svh;
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  /* row 2 is the dwell: room for the sticky stage to park below the HUD while the world holds its winter */
+  grid-template-rows: auto 34svh;
+  column-gap: clamp(12px, 2vw, 32px);
+}
+.forgive::after {
+  content: '';
+  grid-row: 2;
+  grid-column: 1 / -1;
+}
+/* the dwell row replaces the slot's trailing margin, so the chapter barely grows */
+.slot.slot--forgive {
+  margin-bottom: 0;
+}
+.forgive__stage {
+  /* parks below the fixed HUD (never slides under the brand or the controls) instead of scrolling past it */
+  position: sticky;
+  top: calc(var(--hud-top) + 16px);
+  align-self: start;
+  grid-row: 1;
+  grid-column: 2 / span 5;
+  min-width: min(100%, 440px);
+  max-width: 540px;
+}
+.forgive__sheet {
+  position: relative;
+  color: var(--ink);
+}
+.forgive__sheet[hidden] {
+  display: block !important;
+  visibility: hidden;
+}
+.forgive__paper {
+  position: absolute;
+  pointer-events: none;
+  filter: drop-shadow(0 18px 28px rgba(6, 12, 10, 0.45)) drop-shadow(0 2px 3px rgba(6, 12, 10, 0.35));
+}
+.forgive__inner {
+  position: relative;
+  padding: clamp(28px, 3.4vw, 44px) clamp(24px, 3.2vw, 44px) clamp(24px, 3vw, 36px);
+}
+.forgive__sheet.is-frozen .forgive__inner,
+.forgive__sheet.is-frozen .forgive__paper {
+  visibility: hidden;
+}
+.forgive__sheet.is-dissolving {
+  transition: opacity var(--dissolve, 1.6s) var(--ease-out), filter var(--dissolve, 1.6s) ease-in;
+  opacity: 0;
+  filter: blur(3px);
+}
+html.reduced-motion .forgive__sheet.is-dissolving {
+  filter: none;
+}
+.forgive__kicker {
+  margin: 0 0 14px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #5b5446;
+}
+.forgive__cjk {
+  font-family: var(--font-seal);
+  font-size: 22px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+.forgive__line {
+  margin: 0;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(23px, 2.1vw, 29px);
+  line-height: 1.3;
+  font-variation-settings: 'opsz' 36;
+  text-wrap: balance;
+}
+.forgive__label {
+  display: block;
+  margin: 26px 0 6px;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.4;
+  color: #3f3a31;
+}
+.forgive__note {
+  color: #6a6253;
+}
+.forgive__field {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  margin: 0;
+  padding: 6px 0 4px;
+  border: 0;
+  border-bottom: 1px solid rgba(28, 27, 25, 0.38);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 19px;
+  line-height: 1.5;
+  overflow: hidden;
+}
+.forgive__field:focus {
+  outline: none;
+  border-bottom-color: var(--ink);
+  box-shadow: 0 1px 0 0 var(--ink);
+}
+.forgive__field:focus-visible {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+}
+.forgive__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+}
+.forgive__count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: #6a6253;
+}
+.forgive__go {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 22px 0 18px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: 17px;
+  cursor: pointer;
+  transition: background var(--dur-ui) var(--ease-out), color var(--dur-ui) var(--ease-out);
+}
+.forgive__go-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--lantern);
+  box-shadow: 0 0 8px 1px rgba(242, 169, 59, 0.7);
+}
+.forgive__go:hover {
+  background: #2e2b26;
+}
+.forgive__go:focus-visible {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+}
+.forgive__fire,
+.forgive__embers canvas {
+  position: absolute;
+  pointer-events: none;
+}
+.forgive__fire {
+  z-index: 1;
+}
+.forgive__embers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.forgive__mirror {
+  position: absolute;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
+  opacity: 0;
+  pointer-events: none;
+}
+.forgive__done {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 clamp(24px, 3.2vw, 44px);
+  color: var(--fg);
+  outline: none;
+}
+.forgive__done[hidden] {
+  display: none;
+}
+.forgive__done::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 18% -4% 18% -8%;
+  /* a firmer local scrim than the copy's: the panel lands on the palest frame of the chapter (snow) */
+  background: radial-gradient(closest-side, var(--scrim) 0%, var(--scrim) 55%, var(--scrim-edge) 100%);
+  filter: blur(18px);
+  opacity: 1;
+}
+.forgive__done > * {
+  text-shadow: 0 1px 2px rgba(6, 9, 12, 0.55), 0 1px 16px var(--shadow);
+}
+.forgive__light {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f4f7f8 0%, var(--rain-silver) 55%, rgba(191, 199, 204, 0) 100%);
+  box-shadow: 0 0 18px 6px rgba(191, 199, 204, 0.55), 0 0 60px 18px rgba(191, 199, 204, 0.18);
+  animation: forgive-breathe 4.8s ease-in-out infinite;
+}
+@keyframes forgive-breathe {
+  0%, 100% { box-shadow: 0 0 18px 6px rgba(191, 199, 204, 0.5), 0 0 60px 18px rgba(191, 199, 204, 0.14); }
+  50% { box-shadow: 0 0 22px 8px rgba(191, 199, 204, 0.7), 0 0 72px 24px rgba(191, 199, 204, 0.22); }
+}
+html.reduced-motion .forgive__light {
+  animation: none;
+}
+.forgive__done:not([hidden]) {
+  animation: forgive-in 1.1s var(--ease-out) both;
+}
+@keyframes forgive-in {
+  from { opacity: 0; }
+}
+.forgive__earned {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--fg);
+  text-shadow: 0 1px 14px var(--shadow);
+}
+.forgive__earned .forgive__cjk {
+  color: var(--rain-silver);
+  font-size: 26px;
+  margin-right: 4px;
+  vertical-align: -3px;
+}
+.forgive__again {
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fg-2);
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 16px;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.forgive__again:hover {
+  color: var(--fg);
+}
+.forgive__again:focus-visible {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+}
+
+/* No-WebGL poster for Seattle (SPEC §11): a still rendered from the real rain scene (the lake arrival: convoy,
+   campus, Rainier), desktop and portrait, replacing the CSS gradient poster. A light ink wash keeps copy legible. */
+/* Every other chapter follows the same pattern (scripts/shoot-posters.mjs renders the stills: desktop 1440x900,
+   portrait 390x844). The CSS gradient poster in main.css stays behind as --poster-base, the background colour
+   that shows while a JPEG loads or if it fails. Chapters with paper copy get the ink wash; chapters with ink copy
+   get a paper wash. Prologue: dusk on the Yangtze (bridge, pagoda, town, boat). River: the canal with the
+   grandparents' lit window at its end. Crossing: the moon road at night. Coast: golden hour with the friends'
+   lanterns. Workshop: the shelf under the rain window. Loop: the whole water cycle drawn over the Pacific rim.
+   Next: the seedling under glass on the dawn shore. */
+:root {
+  --poster-wash-ink: linear-gradient(to bottom, rgba(10, 13, 17, 0.12), rgba(10, 13, 17, 0.38));
+  --poster-wash-paper: linear-gradient(to bottom, rgba(243, 237, 226, 0.08), rgba(243, 237, 226, 0.3));
+  /* the rendered dusk is pale mist, so prologue copy is ink (main.css poster tone); a soft dark band at the top
+     keeps the HUD legible whichever tone it takes */
+  --poster-wash-prologue: linear-gradient(to bottom, rgba(10, 13, 17, 0.32), rgba(10, 13, 17, 0) 22%), var(--poster-wash-paper);
+  /* portrait Jiangyin stills end in deep water where the phone copy sits: lift it for ink copy */
+  --poster-wash-deepwater: linear-gradient(to bottom, rgba(243, 237, 226, 0) 38%, rgba(243, 237, 226, 0.5) 72%, rgba(243, 237, 226, 0.62));
+}
+#posters :is(.poster--prologue, .poster--river, .poster--crossing, .poster--coast, .poster--rain, .poster--workshop, .poster--loop, .poster--next),
+html:not(.js) :is(.chapter--prologue, .chapter--river, .chapter--crossing, .chapter--coast, .chapter--rain, .chapter--workshop, .chapter--loop, .chapter--next) {
+  --poster-size: cover;
+  --poster-pos: center;
+}
+#posters .poster--rain,
+html:not(.js) .chapter--rain {
+  --poster: var(--poster-wash-ink), url('/posters/rain-lake.jpg');
+}
+#posters .poster--prologue,
+html:not(.js) .chapter--prologue {
+  --poster: var(--poster-wash-prologue), url('/posters/prologue.jpg');
+}
+#posters .poster--river,
+html:not(.js) .chapter--river {
+  --poster: var(--poster-wash-paper), url('/posters/river.jpg');
+}
+#posters .poster--crossing,
+html:not(.js) .chapter--crossing {
+  --poster: var(--poster-wash-ink), url('/posters/crossing.jpg');
+}
+#posters .poster--coast,
+html:not(.js) .chapter--coast {
+  --poster: var(--poster-wash-paper), url('/posters/coast.jpg');
+}
+#posters .poster--workshop,
+html:not(.js) .chapter--workshop {
+  --poster: var(--poster-wash-ink), url('/posters/workshop.jpg');
+}
+#posters .poster--loop,
+html:not(.js) .chapter--loop {
+  /* the still is the map alone (no 3D stroke: the DOM ring is the one loop); a soft paper breath under the manifesto */
+  --poster: radial-gradient(34% 24% at 50% 44%, rgba(243, 237, 226, 0.62), rgba(243, 237, 226, 0) 100%), var(--poster-wash-paper), url('/posters/loop.jpg');
+}
+#posters .poster--next,
+html:not(.js) .chapter--next {
+  --poster: var(--poster-wash-paper), url('/posters/next.jpg');
+}
+@media (max-aspect-ratio: 4/5) {
+  #posters .poster--rain,
+  html:not(.js) .chapter--rain {
+    --poster: var(--poster-wash-ink), url('/posters/rain-lake-portrait.jpg');
+  }
+  #posters .poster--prologue,
+  html:not(.js) .chapter--prologue {
+    --poster: var(--poster-wash-deepwater), var(--poster-wash-prologue), url('/posters/prologue-portrait.jpg');
+  }
+  #posters .poster--river,
+  html:not(.js) .chapter--river {
+    --poster: var(--poster-wash-deepwater), url('/posters/river-portrait.jpg');
+  }
+  #posters .poster--crossing,
+  html:not(.js) .chapter--crossing {
+    --poster: var(--poster-wash-ink), url('/posters/crossing-portrait.jpg');
+  }
+  #posters .poster--coast,
+  html:not(.js) .chapter--coast {
+    --poster: var(--poster-wash-paper), url('/posters/coast-portrait.jpg');
+  }
+  #posters .poster--workshop,
+  html:not(.js) .chapter--workshop {
+    --poster: var(--poster-wash-ink), url('/posters/workshop-portrait.jpg');
+  }
+  #posters .poster--loop,
+  html:not(.js) .chapter--loop {
+    --poster: radial-gradient(56% 22% at 50% 46%, rgba(243, 237, 226, 0.66), rgba(243, 237, 226, 0) 100%), var(--poster-wash-paper), url('/posters/loop-portrait.jpg');
+  }
+  #posters .poster--next,
+  html:not(.js) .chapter--next {
+    --poster: var(--poster-wash-paper), url('/posters/next-portrait.jpg');
+  }
+}
+
+/* Seattle beat posters (ui/forgive.ts sets data-beat from local progress, matching REDUCED_STILLS): the lake, the
+   quad in summer, winter. Used by ?webgl=0 and while the rain module loads on a deep link. */
+#posters .poster--rain[data-beat='1'] {
+  --poster: var(--poster-wash-ink), url('/posters/rain-quad.jpg');
+}
+#posters .poster--rain[data-beat='2'] {
+  --poster: var(--poster-wash-ink), url('/posters/rain-winter.jpg');
+}
+@media (max-aspect-ratio: 4/5) {
+  #posters .poster--rain[data-beat='1'] {
+    --poster: var(--poster-wash-ink), url('/posters/rain-quad-portrait.jpg');
+  }
+  #posters .poster--rain[data-beat='2'] {
+    --poster: var(--poster-wash-ink), url('/posters/rain-winter-portrait.jpg');
+  }
+}
+
+/* Seattle beat captions (ui/forgive.ts): the seasons turning at UW, and the CSO lanterns as the pool rises.
+   Mono, small, top right on desktop (the copy and the sheet hold the left columns), top left in portrait. */
+.rain-beat {
+  position: fixed;
+  top: calc(var(--hud-top) + 18px);
+  right: var(--gutter);
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  max-width: min(420px, calc(100vw - 2 * var(--gutter)));
+  pointer-events: none;
+  opacity: 0;
+  transform: translate3d(0, -6px, 0);
+  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
+}
+.rain-beat.is-on {
+  opacity: 1;
+  transform: none;
+}
+.rain-beat > div {
+  margin: 0;
+  padding: 5px 10px;
+  border-radius: 3px;
+  background: rgba(14, 18, 20, 0.62);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  text-align: right;
+}
+.rain-beat__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e4ddd0 !important;
+}
+.rain-beat__marks {
+  display: inline-flex;
+  gap: 4px;
+}
+.rain-beat__marks i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 1px solid rgba(243, 237, 226, 0.75);
+}
+.rain-beat__marks i.is-on {
+  background: var(--paper);
+}
+.rain-beat__season {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+}
+.rain-beat__season.is-new {
+  animation: rain-beat-in 0.6s var(--ease-out) both;
+}
+@keyframes rain-beat-in {
+  from { opacity: 0; transform: translate3d(0, 4px, 0); }
+}
+.rain-beat__lantern {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-out);
+}
+.rain-beat.has-lantern .rain-beat__lantern {
+  opacity: 1;
+}
+.rain-beat__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #d2412c;
+  box-shadow: 0 0 8px rgba(242, 169, 59, 0.8);
+}
+html.reduced-motion .rain-beat,
+html.reduced-motion .rain-beat__lantern {
+  transition: none;
+}
+html.reduced-motion .rain-beat__season.is-new {
+  animation: none;
+}
+@media (max-aspect-ratio: 4/5) {
+  .rain-beat {
+    top: calc(var(--hud-top) + 10px);
+    right: auto;
+    left: var(--gutter);
+    align-items: flex-start;
+  }
+  .rain-beat > div {
+    text-align: left;
+  }
+  .rain-beat__lantern {
+    font-size: 11.5px;
+  }
+  /* portrait: the sheet enters later (a copy-free window shows the seasons uncovered), is a little narrower, and
+     parks lower, so the lantern and the rising lights stay in view above it */
+  .forgive {
+    padding-top: 78svh;
+    grid-template-rows: auto 12svh;
+  }
+  .forgive__stage {
+    top: max(calc(var(--hud-top) + 16px), calc(100svh - var(--track-h) - 24px - 440px));
+    width: min(100%, 88vw);
+    justify-self: center;
+  }
+}
+
+/* ================================================================ Loop */
+.loop {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--fg);
+  padding-top: 4svh;
+}
+.loop__kicker {
+  margin: 0 0 clamp(4px, 2vw, 18px);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.loop__board {
+  position: relative;
+  width: min(540px, 100%);
+  aspect-ratio: 1;
+  touch-action: pan-y;
+  isolation: isolate;
+}
+.loop__board::before {
+  /* a local scrim so the ink and labels hold over any world frame */
+  content: '';
+  position: absolute;
+  inset: 4%;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--scrim) 0%, var(--scrim) 70%, var(--scrim-edge) 100%);
+  opacity: 0.7;
+}
+.loop__art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.loop__ink {
+  fill: var(--fg);
+  opacity: 0.9;
+}
+.loop__dry {
+  fill: none;
+  stroke: var(--fg);
+  stroke-width: 1.1;
+  opacity: 0.45;
+}
+.loop__ink--close {
+  opacity: 1;
+}
+.loop__word {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  fill: var(--fg-3);
+  transition: fill 900ms var(--ease-out);
+}
+.loop[data-state='closed'] .loop__word {
+  fill: var(--fg-2);
+}
+.loop__traveller,
+.loop__traveller-glow {
+  fill: var(--c, var(--lantern));
+  opacity: 0;
+}
+.loop[data-state='closing'] .loop__traveller {
+  opacity: 1;
+}
+.loop[data-state='closing'] .loop__traveller-glow {
+  opacity: 0.28;
+  filter: blur(4px);
+}
+
+/* stations: sockets on the ring */
+.loop__station {
+  position: absolute;
+  width: 58px;
+  height: 58px;
+  transform: translate(-50%, -50%);
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.loop__socket {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px dashed var(--fg-2);
+  background: var(--paper);
+  transition: transform var(--dur-ui) var(--ease-out), border-color var(--dur-ui) var(--ease-out);
+}
+html[data-tone='light'] .loop__socket {
+  background: rgba(10, 13, 17, 0.6);
+}
+.loop[data-armed='true'] .loop__station:not([data-filled='true']) .loop__socket {
+  border-color: var(--lantern);
+  border-style: solid;
+  transform: scale(1.12);
+}
+.loop__station:hover .loop__socket {
+  transform: scale(1.12);
+}
+.loop__station[data-filled='true'] {
+  cursor: default;
+}
+.loop__station:focus-visible,
+.loop__token:focus-visible {
+  outline: 2px solid var(--lantern);
+  outline-offset: 3px;
+}
+.loop__label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  white-space: nowrap;
+  pointer-events: none;
+  text-align: center;
+}
+.loop__water {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--fg-2);
+}
+.loop__name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.1;
+}
+.loop__cjk {
+  font-family: var(--font-seal);
+  font-size: 22px;
+}
+
+/* the three lights */
+.loop__token {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  border: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--fg);
+  cursor: grab;
+  touch-action: none;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+}
+.loop__orb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 42% 38%, #fffaf0 0%, var(--c) 46%, color-mix(in srgb, var(--c) 70%, #000) 100%);
+  box-shadow: 0 0 0 1.5px var(--fg), 0 0 18px 5px color-mix(in srgb, var(--c) 55%, transparent);
+  transition: transform var(--dur-ui) var(--ease-out), box-shadow var(--dur-ui) var(--ease-out), opacity var(--dur-ui);
+}
+.loop__token[data-earned='false'] .loop__orb {
+  background: var(--paper);
+  box-shadow: 0 0 0 1.5px var(--fg), inset 0 0 0 5px color-mix(in srgb, var(--c) 60%, var(--paper));
+}
+.loop__tname {
+  position: absolute;
+  top: calc(50% + 20px);
+  font-family: var(--font-display);
+  font-size: 15px;
+  white-space: nowrap;
+  color: var(--fg-2);
+}
+.loop__token[aria-pressed='true'] .loop__orb,
+.loop__token:hover .loop__orb {
+  transform: scale(1.18);
+}
+.loop__token[aria-pressed='true'] .loop__orb {
+  box-shadow: 0 0 0 2px var(--lantern), 0 0 24px 8px color-mix(in srgb, var(--c) 65%, transparent);
+}
+.loop__token[data-dragging='true'] {
+  cursor: grabbing;
+  z-index: 3;
+}
+.loop__token[data-wrong='true'] .loop__orb {
+  box-shadow: 0 0 0 1.5px #a5532e, 0 0 14px 3px color-mix(in srgb, var(--c) 40%, transparent);
+}
+.loop__token[data-placed='true'] {
+  cursor: default;
+}
+.loop__token[data-placed='true'] .loop__tname {
+  display: none;
+}
+.loop__token[data-placed='true'] .loop__orb {
+  background: radial-gradient(circle at 42% 38%, #fffaf0 0%, var(--c) 46%, color-mix(in srgb, var(--c) 70%, #000) 100%);
+  box-shadow: 0 0 0 1.5px var(--fg), 0 0 22px 7px color-mix(in srgb, var(--c) 60%, transparent);
+}
+.loop[data-state='closed'] .loop__token[data-placed='true'] .loop__orb {
+  box-shadow: 0 0 0 1.5px var(--fg), 0 0 30px 10px color-mix(in srgb, var(--c) 70%, transparent);
+}
+.loop__status {
+  min-height: 3em;
+  max-width: 34ch;
+  margin: 10px 0 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: 17px;
+  line-height: 1.45;
+  color: var(--fg-2);
+}
+
+/* ================================================================ mobile */
+@media (max-width: 760px) {
+  .forgive__stage {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+  .forgive__line {
+    font-size: 22px;
+  }
+  .loop__name {
+    font-size: 16px;
+  }
+  .loop__cjk {
+    font-size: 19px;
+  }
+  /* the forgive (rain) label chip rides above the ring, outside the board: clear the kicker pill off it */
+  .loop .loop__kicker {
+    margin-bottom: 40px;
+  }
+  .loop__tname {
+    font-size: 14px;
+  }
+  /* the side labels tuck under their stations so nothing leaves the gutter */
+  .loop__label--gratitude {
+    transform: translate(calc(-50% - 22px), calc(-50% + 30px));
+  }
+  .loop__label--love {
+    transform: translate(calc(-50% + 10px), calc(-50% + 30px));
+  }
+  .loop__word {
+    font-size: 13.5px;
+    letter-spacing: 0.03em;
+  }
+}
