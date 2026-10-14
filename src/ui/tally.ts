@@ -5,7 +5,7 @@
 import '../styles/next-shore.css';
 import type { App } from '../app';
 import { bus } from '../bus';
-import { THREE_WORDS, WELLBEING_LINE } from '../content/story';
+import { SHORE_COPY, THREE_WORDS, WELLBEING_LINE } from '../content/story';
 import { TALLY_COPY } from '../content/ui';
 import { announce } from './live';
 
@@ -139,13 +139,39 @@ export function init(app: App): void {
     now.id = now.id || 'shore-now';
     now.insertAdjacentElement('afterend', look);
     look.addEventListener('click', () => {
-      const r = look.getBoundingClientRect();
-      const track = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--track-h')) || 76;
-      // scroll up so this button sits just above the journey track: the most world above the copy
-      const delta = r.bottom - (window.innerHeight - track - 28);
-      if (delta < -8) window.scrollBy({ top: delta, behavior: app.reducedMotion ? 'auto' : 'smooth' });
+      // The camera is a function of scroll: it is closest at the foot of the page. Never scroll up here (that
+      // pulls the camera back); settle at the rest state if we are not there, then let the world lean in.
+      const rest = document.documentElement.scrollHeight - window.innerHeight;
+      if (rest - window.scrollY > 8) window.scrollTo({ top: rest, behavior: app.reducedMotion ? 'auto' : 'smooth' });
       bus.emit('next:look', {});
       announce(TALLY_COPY.seed(WELLBEING_LINE));
+    });
+  }
+
+  // ---- "Say hello": a mailto: link does nothing visible when the browser has no mail app. Copy the address
+  // too and say so under the button, so the click always answers; the mail app still opens where there is one.
+  const hello = document.querySelector<HTMLAnchorElement>('.chapter--next .shore .cta--primary[href^="mailto:"]');
+  if (hello && !hello.parentElement?.querySelector('.shore__copied')) {
+    const email = hello.getAttribute('href')!.slice('mailto:'.length);
+    const note = document.createElement('p');
+    note.className = 'shore__copied';
+    note.setAttribute('role', 'status');
+    note.hidden = true;
+    hello.parentElement!.insertAdjacentElement('afterend', note);
+    let hideTimer = 0;
+    hello.addEventListener('click', () => {
+      const show = (msg: string) => {
+        note.textContent = msg;
+        note.hidden = false;
+        window.clearTimeout(hideTimer);
+        hideTimer = window.setTimeout(() => (note.hidden = true), 6000);
+      };
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(email).then(
+          () => show(SHORE_COPY.copied(email)),
+          () => show(SHORE_COPY.writeTo(email)),
+        );
+      } else show(SHORE_COPY.writeTo(email));
     });
   }
 

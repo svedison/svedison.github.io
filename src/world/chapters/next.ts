@@ -228,6 +228,9 @@ const create: WorldModuleFactory = (ctx) => {
   let hoverTarget = 0;
   let pulse = 0;
   let lookHold = 0;
+  /** 0..1 envelope of the 'Look closer' dolly: the camera leans in to the glass and eases back out. */
+  let look = 0;
+  const lookTmp = new THREE.Vector3();
   let px = 0;
   let py = 0;
   let lastBoatU = -1;
@@ -250,7 +253,7 @@ const create: WorldModuleFactory = (ctx) => {
   );
   offs.push(
     bus.on('next:look', () => {
-      lookHold = 2.6;
+      lookHold = 3.2;
       if (!reduced) pulse = 1;
     }),
   );
@@ -379,6 +382,12 @@ const create: WorldModuleFactory = (ctx) => {
         lookHold = Math.max(0, lookHold - dt);
         hoverTarget = 1;
       }
+      // the dolly leans in quickly and drifts back out slowly; one step under reduced motion
+      {
+        const lt = lookHold > 0 ? 1 : 0;
+        const lk = 1 - Math.exp(-(lt > look ? 3.2 : 1.1) * dt);
+        look += (lt - look) * (reduced ? 1 : lk);
+      }
       // warm fast (a hand on the glass answers within a frame or two), cool slowly
       const k = 1 - Math.exp(-(hoverTarget > hover ? 22 : 6) * dt);
       hover += (hoverTarget - hover) * (reduced ? 1 : k);
@@ -458,10 +467,19 @@ const create: WorldModuleFactory = (ctx) => {
         camPos.x += px * 0.12;
         camPos.y += py * 0.05;
       }
+      // 'Look closer': dolly toward the heart of the seedling and settle the gaze on it
+      let fov = keyFov(keys, t);
+      if (look > 0.001) {
+        const l = look * look * (3 - 2 * look);
+        lookTmp.copy(seedling.heart);
+        lookTmp.y += 0.08;
+        camPos.lerp(lookTmp, 0.42 * l);
+        camTgt.lerp(lookTmp, 0.85 * l);
+        fov -= 5 * l;
+      }
       camera.position.copy(camPos);
       camera.up.set(0, 1, 0);
       camera.lookAt(camTgt);
-      const fov = keyFov(keys, t);
       if (camera.fov !== fov) {
         camera.fov = fov;
         camera.updateProjectionMatrix();
