@@ -72,7 +72,7 @@ body.logbook-page {
   background: transparent;
   color: var(--lb-frame-text);
   font: inherit;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
 }
 .lb-bar__print:hover { color: var(--paper); border-color: rgba(243, 237, 226, 0.3); }
 body.logbook-page main { padding: clamp(16px, 3vw, 40px) var(--gutter) 64px; }

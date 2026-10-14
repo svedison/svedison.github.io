@@ -25,7 +25,7 @@ const ALPHA = 0.6; // peak opacity of an ember
 const POOL = 24; // hard cap on what can be on screen at once
 // The lantern: one soft glow that follows the pointer on a lag and breathes for a moment after the hand rests.
 const GLOW_LAG = 9; // follow damping (a beat behind the hand, never jittering on it)
-const GLOW_OFF: [number, number] = [7.5, 15]; // px from the cursor hotspot to the lantern body (main.css cursor)
+const GLOW_OFF: [number, number] = [0, 9]; // px from the cursor hotspot to the lantern body (main.css cursor)
 const GLOW_SIZE = 0.05; // diameter incl. halo (x H)
 const GLOW_ALPHA = 0.55;
 const GLOW_BREATHE_FOR = 4; // s of breathing after the last move, then it holds steady and the loop sleeps

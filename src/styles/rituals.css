@@ -151,7 +151,7 @@ html.reduced-motion .forgive__sheet.is-dissolving {
   color: var(--paper);
   font-family: var(--font-body);
   font-size: 17px;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
   transition: background var(--dur-ui) var(--ease-out), color var(--dur-ui) var(--ease-out);
 }
 .forgive__go-dot {
@@ -269,7 +269,7 @@ html.reduced-motion .forgive__light {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
 }
 .forgive__again:hover {
   color: var(--fg);
@@ -587,7 +587,7 @@ html.reduced-motion .rain-beat__season.is-new {
   padding: 0;
   border-radius: 50%;
   background: none;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
   display: grid;
   place-items: center;
 }
@@ -611,7 +611,7 @@ html[data-tone='light'] .loop__socket {
   transform: scale(1.12);
 }
 .loop__station[data-filled='true'] {
-  cursor: default;
+  cursor: var(--cursor-lantern);
 }
 .loop__station:focus-visible,
 .loop__token:focus-visible {
@@ -657,7 +657,7 @@ html[data-tone='light'] .loop__socket {
   border-radius: 50%;
   background: none;
   color: var(--fg);
-  cursor: grab;
+  cursor: var(--cursor-held);
   touch-action: none;
   z-index: 2;
   display: grid;
@@ -691,14 +691,14 @@ html[data-tone='light'] .loop__socket {
   box-shadow: 0 0 0 2px var(--lantern), 0 0 24px 8px color-mix(in srgb, var(--c) 65%, transparent);
 }
 .loop__token[data-dragging='true'] {
-  cursor: grabbing;
+  cursor: var(--cursor-held);
   z-index: 3;
 }
 .loop__token[data-wrong='true'] .loop__orb {
   box-shadow: 0 0 0 1.5px #a5532e, 0 0 14px 3px color-mix(in srgb, var(--c) 40%, transparent);
 }
 .loop__token[data-placed='true'] {
-  cursor: default;
+  cursor: var(--cursor-lantern);
 }
 .loop__token[data-placed='true'] .loop__tname {
   display: none;
