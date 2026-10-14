@@ -41,7 +41,7 @@ html.js .chapter--next {
   text-decoration-color: var(--rule);
   text-underline-offset: 6px;
   text-decoration-thickness: 1px;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
   transition: color var(--dur-ui) var(--ease-out), text-decoration-color var(--dur-ui) var(--ease-out);
 }
 .shore__look:hover {
@@ -214,7 +214,7 @@ html.js .chapter--next .is-hudfade {
   text-decoration-color: var(--rule);
   text-underline-offset: 6px;
   text-decoration-thickness: 1px;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
   transition: text-decoration-color var(--dur-ui) var(--ease-out);
 }
 .tally__btn:hover {

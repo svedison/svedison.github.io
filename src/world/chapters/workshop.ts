@@ -433,7 +433,7 @@ const create: WorldModuleFactory = async (ctx) => {
     hold = true;
     hoverIdx = -1;
     renderer.domElement.style.touchAction = 'none';
-    renderer.domElement.style.cursor = 'grab';
+    renderer.domElement.style.cursor = 'var(--cursor-held)';
     dirty = 3;
     if (id === 'pudding-cup' && !puddingSent) {
       puddingSent = true;
@@ -597,7 +597,7 @@ const create: WorldModuleFactory = async (ctx) => {
       if (pointers.size === 1) Hs.drag = { id: e.pointerId, x: e.clientX, y: e.clientY, t: e.timeStamp, moved: 0 };
       Hs.vy = Hs.vp = 0;
       Hs.pinch = 0;
-      renderer.domElement.style.cursor = 'grabbing';
+      renderer.domElement.style.cursor = 'var(--cursor-held)';
       return;
     }
     hold = true; // the lean freezes for the length of a press (rule 1)
@@ -609,7 +609,7 @@ const create: WorldModuleFactory = async (ctx) => {
     const d = Hs.drag;
     if (d && e.pointerId === d.id) {
       Hs.drag = null;
-      renderer.domElement.style.cursor = Hs.open ? 'grab' : '';
+      renderer.domElement.style.cursor = Hs.open ? 'var(--cursor-held)' : '';
       if (d.moved < CLICK_PX && !pickInHand(e.clientX, e.clientY)) requestClose(); // click away puts it back
       return;
     }

@@ -39,7 +39,7 @@
   color: var(--paper);
   opacity: 0;
   transition: opacity 0.6s var(--ease-out);
-  cursor: pointer;
+  cursor: var(--cursor-lit);
   overflow: auto;
 }
 .egg-moon[hidden] { display: none; }
@@ -72,7 +72,7 @@
   column-gap: clamp(40px, 7vw, 112px);
   row-gap: 20px;
   max-width: 980px;
-  cursor: default;
+  cursor: var(--cursor-lantern);
 }
 .egg-moon__poem { display: contents; margin: 0; }
 
@@ -131,7 +131,7 @@
   font: 500 12px/1 var(--font-mono);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
 }
 .egg-moon__close:hover { color: var(--paper); }
 .egg-moon__close:focus-visible { outline: 2px solid var(--lantern); outline-offset: 3px; }

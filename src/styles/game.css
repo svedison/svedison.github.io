@@ -13,7 +13,7 @@
   background: transparent;
   color: inherit;
   font: 400 30px/1 var(--font-display);
-  cursor: pointer;
+  cursor: var(--cursor-lit);
   transition: background-color 0.2s;
 }
 .game-close:hover { background: rgba(28, 27, 25, 0.07); }
@@ -27,7 +27,7 @@
   color: var(--paper);
   font: 500 12px/1 var(--font-mono);
   letter-spacing: 0.06em;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
 }
 .game-btn:hover { background: #33312d; }
 
@@ -43,7 +43,7 @@
   text-decoration-thickness: 1px;
   text-underline-offset: 4px;
   text-decoration-color: rgba(28, 27, 25, 0.35);
-  cursor: pointer;
+  cursor: var(--cursor-lit);
 }
 .game-link:hover { text-decoration-color: currentColor; }
 
@@ -92,7 +92,7 @@
   color: var(--fg);
   font: italic 400 16px/1.35 var(--font-body);
   text-align: start;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
   transition: opacity 0.25s, color 0.25s;
 }
 [data-tone='dark'] .keep {
@@ -395,7 +395,7 @@
   background: none;
   color: var(--ink);
   text-align: start;
-  cursor: pointer;
+  cursor: var(--cursor-lit);
   white-space: nowrap;
 }
 .atlas-st__dot { inline-size: 44px; block-size: 44px; flex: none; }

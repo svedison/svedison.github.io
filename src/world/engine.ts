@@ -329,7 +329,7 @@ export async function createEngine(opts: EngineOptions) {
     hovered?.onHover?.(false);
     hovered = h;
     hovered?.onHover?.(true);
-    canvas.style.cursor = h ? 'pointer' : '';
+    canvas.style.cursor = h ? 'var(--cursor-lit)' : '';
     opts.onLabel?.(h ? h.label : null, x, y);
   }
   let hoverQueued = false;
