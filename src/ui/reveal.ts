@@ -118,7 +118,9 @@ interface StageItem {
 
 // Off-stage reading blocks are click-through all the way down (main.css re-enables pointer events on
 // some descendants, e.g. the hotspot mirrors, so the pin's own pointer-events is not enough).
-const OFFSTAGE_CSS = `html.js .chapter__pin:not(.is-active) * { pointer-events: none !important; }`;
+// Only staged (fixed) pins carry .is-staged: the in-flow Next shore pin is never off stage, so its
+// contact links, "Look closer" and the tally stay clickable.
+const OFFSTAGE_CSS = `html.js .chapter__pin.is-staged:not(.is-active) * { pointer-events: none !important; }`;
 
 function createStage(app: App) {
   if (!document.getElementById('reveal-offstage-css')) {
@@ -133,6 +135,7 @@ function createStage(app: App) {
     const pin = section.querySelector<HTMLElement>('.chapter__pin');
     const hold = section.querySelector<HTMLElement>('.chapter__hold');
     if (!pin || !hold || getComputedStyle(pin).position !== 'fixed') return;
+    pin.classList.add('is-staged');
     items.push({ i, section, pin, hold, trailing: section.hasAttribute('data-trailing'), a: 0, b: 0, v: -1, late: false, onShow: null });
   });
 
