@@ -23,6 +23,11 @@ const CURL: [number, number] = [0.12 / PLANE, 0.1 / PLANE];
 const SIZE: [number, number] = [0.012 / PLANE, 0.03 / PLANE]; // diameter (x H)
 const ALPHA = 0.6; // peak opacity of an ember
 const POOL = 24; // hard cap on what can be on screen at once
+// The lantern: one soft glow that follows the pointer on a lag and breathes for a moment after the hand rests.
+const GLOW_LAG = 9; // follow damping (a beat behind the hand, never jittering on it)
+const GLOW_SIZE = 0.05; // diameter incl. halo (x H)
+const GLOW_ALPHA = 0.55;
+const GLOW_BREATHE_FOR = 4; // s of breathing after the last move, then it holds steady and the loop sleeps
 const RIPPLE_MS = 50;
 
 interface Mote {
@@ -119,7 +124,8 @@ export function init(app: App): void {
   window.addEventListener('resize', resize, { passive: true });
 
   // Emitter state (lagged behind the pointer).
-  const E = { x: 0, y: 0, lx: 0, ly: 0, acc: 0, px: 0, py: 0, has: false, inside: false, overUI: false };
+  const E = { x: 0, y: 0, lx: 0, ly: 0, acc: 0, px: 0, py: 0, has: false, inside: false, overUI: false, still: 0 };
+  const G = { x: 0, y: 0, a: 0 }; // the lantern glow: position and its eased presence (0..1)
   const UI = 'a, button, input, textarea, select, [role="button"], [role="dialog"]';
 
   const overlays = new Set<string>();
@@ -181,6 +187,16 @@ export function init(app: App): void {
       } else {
         E.acc = 0; // a hover or a pause owes nothing: the next sweep starts clean
       }
+      E.still = moved > 0.5 ? 0 : E.still + dt;
+    }
+
+    // The lantern follows, and shows only where it belongs (inside, not over a control).
+    const want = on && E.has && E.inside && !E.overUI ? 1 : 0;
+    G.a = damp(G.a, want, want > G.a ? 6 : 10, dt);
+    if (G.a < 0.004) G.a = 0;
+    if (E.has) {
+      G.x = damp(G.x, E.px, GLOW_LAG, dt);
+      G.y = damp(G.y, E.py, GLOW_LAG, dt);
     }
 
     // Update + draw.
@@ -215,11 +231,20 @@ export function init(app: App): void {
       g!.globalAlpha = a * u * 0.85;
       g!.drawImage(deep, m.x - h, m.y - h, d, d);
     }
+    if (G.a > 0) {
+      const breathing = E.still < GLOW_BREATHE_FOR;
+      const breath = breathing ? 0.88 + 0.12 * Math.sin(time * 2.1) : 0.88;
+      const d = GLOW_SIZE * H * (0.96 + 0.04 * breath);
+      g!.globalAlpha = GLOW_ALPHA * G.a * breath;
+      g!.drawImage(gold, G.x - d / 2, G.y - d / 2, d, d);
+    }
     g!.globalAlpha = 1;
     alive = count;
 
-    if (alive > 0 || (on && E.inside && Math.hypot(E.px - E.x, E.py - E.y) > 0.5)) wake();
-    else g!.clearRect(0, 0, W, H);
+    const glowMoving = G.a > 0 && (Math.hypot(E.px - G.x, E.py - G.y) > 0.3 || E.still < GLOW_BREATHE_FOR);
+    const glowFading = G.a > 0 && G.a < 0.999;
+    if (alive > 0 || glowMoving || glowFading || (on && E.inside && Math.hypot(E.px - E.x, E.py - E.y) > 0.5)) wake();
+    else if (G.a === 0) g!.clearRect(0, 0, W, H);
   }
 
   function wake() {
@@ -231,6 +256,7 @@ export function init(app: App): void {
     for (const m of pool) m.age = m.life;
     alive = 0;
     E.acc = 0;
+    G.a = 0;
     g!.setTransform(1, 0, 0, 1, 0, 0);
     g!.clearRect(0, 0, canvas.width, canvas.height);
   }
@@ -243,10 +269,11 @@ export function init(app: App): void {
       E.py = e.clientY;
       E.inside = true;
       E.overUI = e.target instanceof Element && !!e.target.closest(UI);
+      E.still = 0;
       if (!E.has) {
         E.has = true;
-        E.x = E.lx = E.px;
-        E.y = E.ly = E.py;
+        E.x = E.lx = G.x = E.px;
+        E.y = E.ly = G.y = E.py;
       }
       if (!enabled()) return;
       if (!raf) last = performance.now();
@@ -254,8 +281,12 @@ export function init(app: App): void {
     },
     { passive: true },
   );
-  document.documentElement.addEventListener('pointerleave', () => (E.inside = false));
-  window.addEventListener('blur', () => (E.inside = false));
+  const leave = () => {
+    E.inside = false;
+    wake(); // let the lantern fade out
+  };
+  document.documentElement.addEventListener('pointerleave', leave);
+  window.addEventListener('blur', leave);
 
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
