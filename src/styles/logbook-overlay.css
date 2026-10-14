@@ -286,13 +286,13 @@ html.lb-open { overflow: hidden; }
   color: rgba(243, 237, 226, 0.78);
   text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
 }
-.shelf-index__list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.shelf-index__list { display: flex; flex-wrap: wrap; gap: 6px 8px; margin: 0; padding: 0; list-style: none; }
 .shelf-index__list button {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 0 16px 0 12px;
+  min-height: 40px;
+  padding: 0 14px 0 11px;
   border: 1px solid rgba(243, 237, 226, 0.16);
   border-radius: 999px;
   background: rgba(18, 15, 12, 0.66);
@@ -457,8 +457,33 @@ html.ws-inspecting .chapter--workshop .keep--hidden { opacity: 0; transition: op
    higher and the chips lose their label (the chips themselves say what they are) rather than run into the body. */
 @media (min-width: 760px) and (max-height: 860px) {
   .chapter--workshop [data-place='left-high'] .chapter__copy { margin-top: 0; }
-  .chapter--workshop .shelf-index { margin-top: 14px; }
+  .chapter--workshop .shelf-index { margin-top: 12px; }
   .chapter--workshop .shelf-index__label { display: none; }
+  /* smaller chips: eight of them fit in two rows, not three */
+  .shelf-index__list { gap: 6px; }
+  .shelf-index__list button { min-height: 36px; padding: 0 13px 0 10px; font-size: 14px; }
+}
+/* Shorter still (a 13" laptop with the browser chrome open): one row that scrolls sideways, with an edge fade on a
+   side that has more chips past it (ui/logbook.ts sets data-more-left / -right), so the index is 36px tall. */
+@media (min-width: 760px) and (max-height: 720px) {
+  .chapter--workshop .shelf-index__list {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    /* room for the focus ring inside the scroller */
+    margin: -6px -6px;
+    padding: 6px 6px;
+    --fade-l: 0px;
+    --fade-r: 0px;
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+  }
+  .chapter--workshop .shelf-index__list[data-more-left] { --fade-l: 40px; }
+  .chapter--workshop .shelf-index__list[data-more-right] { --fade-r: 48px; }
+  .chapter--workshop .shelf-index__list::-webkit-scrollbar { display: none; }
+  .chapter--workshop .shelf-index__list li { flex: none; }
+  .chapter--workshop .shelf-index__list button { white-space: nowrap; }
 }
 
 /* The piece's one-line 'why' under the chips: phones only, once the dolly is on the shelf (filled by ui/logbook.ts). */
