@@ -14,7 +14,7 @@ import type { ChapterId } from '../content/story';
 import { AUDIO_COPY } from '../content/ui';
 import { CHAPTER_MODULE, type ModuleId } from '../world/types';
 
-type BedId = 'river' | 'ocean' | 'surf' | 'rain' | 'glass' | 'pad';
+type BedId = 'river' | 'ocean' | 'surf' | 'rain' | 'glass' | 'pad' | 'dawn';
 
 const BED_FOR: Record<ModuleId, BedId> = {
   jiangyin: 'river',
@@ -23,7 +23,7 @@ const BED_FOR: Record<ModuleId, BedId> = {
   rain: 'rain',
   workshop: 'glass',
   loop: 'pad',
-  next: 'pad',
+  next: 'dawn',
 };
 
 const MAX_VOICES = 6;
@@ -111,6 +111,65 @@ const crackle = (o: Float32Array, sr: number) => {
       const amp = 0.2 + Math.random() * 0.8;
       const span = Math.floor(sr * 0.003);
       for (let j = 0; j < span && start + j < o.length; j++) o[start + j] += (Math.random() * 2 - 1) * amp * (1 - j / span);
+    }
+  }
+};
+
+/** The dawn bed (Ch.7 Next shore): a slow D-major turn (D, A, Bm, G) that keeps arriving somewhere brighter.
+ *  Three layers, all rendered into one loop: a soft chord pad that breathes between changes, a music-box
+ *  arpeggio in eighths that carries the lift, and a round bass pulse on beats 1 and 3 for a heartbeat.
+ *  84 BPM, 4 bars, ~11.4 s; the loop seam lands on the downbeat of D. */
+const dawn = (o: Float32Array, sr: number) => {
+  o.fill(0);
+  const BPM = 84;
+  const eighth = 60 / BPM / 2;
+  const bar = eighth * 8;
+  // chord tones (root position voicings that lead smoothly), bass, and the arpeggio register one octave up
+  const chords: { pad: number[]; bass: number; arp: number[] }[] = [
+    { pad: [146.83, 185.0, 220.0, 293.66], bass: 73.42, arp: [293.66, 369.99, 440.0, 587.33] }, // D
+    { pad: [164.81, 220.0, 277.18, 329.63], bass: 110.0, arp: [329.63, 440.0, 554.37, 659.26] }, // A
+    { pad: [146.83, 185.0, 246.94, 293.66], bass: 123.47, arp: [293.66, 369.99, 493.88, 587.33] }, // Bm
+    { pad: [146.83, 196.0, 246.94, 293.66], bass: 98.0, arp: [293.66, 392.0, 493.88, 587.33] }, // G
+  ];
+  const pattern = [0, 1, 2, 3, 2, 3, 1, 2]; // rises, turns at the top, and hands off to the next chord
+  const TAU = Math.PI * 2;
+  const len = o.length;
+
+  // a damped partial, added in place
+  const pluck = (at: number, f: number, amp: number, tau: number) => {
+    const start = Math.floor(at * sr);
+    const span = Math.min(len - start, Math.floor(tau * sr * 6));
+    for (let j = 0; j < span; j++) {
+      const t = j / sr;
+      const env = Math.exp(-t / tau) * Math.min(1, t / 0.004);
+      o[start + j] += amp * env * (Math.sin(TAU * f * t) + 0.3 * Math.sin(TAU * 2 * f * t) * Math.exp(-t / (tau * 0.4)) + 0.08 * Math.sin(TAU * 3 * f * t));
+    }
+  };
+
+  for (let c = 0; c < chords.length; c++) {
+    const ch = chords[c];
+    const t0 = c * bar;
+    // pad: each tone swells in over 0.5 s, holds, and releases into the next chord
+    for (let k = 0; k < ch.pad.length; k++) {
+      const f = ch.pad[k];
+      const start = Math.floor(t0 * sr);
+      const span = Math.min(len - start, Math.floor((bar + 0.6) * sr));
+      const ph = Math.random() * TAU;
+      for (let j = 0; j < span; j++) {
+        const t = j / sr;
+        const a = Math.min(1, t / 0.5);
+        const r = t > bar ? Math.max(0, 1 - (t - bar) / 0.6) : 1;
+        const vib = 1 + 0.0012 * Math.sin(TAU * 0.3 * t + ph);
+        o[start + j] += 0.07 * a * r * (Math.sin(TAU * f * vib * t) + 0.35 * Math.sin(TAU * 2 * f * t + ph) * 0.5);
+      }
+    }
+    // bass pulse on 1 and 3
+    pluck(t0, ch.bass, 0.26, 0.5);
+    pluck(t0 + 4 * eighth, ch.bass, 0.2, 0.45);
+    // arpeggio in eighths: the first of each pair a little stronger
+    for (let n = 0; n < 8; n++) {
+      const strong = n % 2 === 0;
+      pluck(t0 + n * eighth, ch.arp[pattern[n]], strong ? 0.17 : 0.12, 0.42);
     }
   }
 };
@@ -212,6 +271,12 @@ function makeBed(id: BedId): Bed {
     stops.push(room);
     chain(room, filter('lowpass', 140), gain(0.55), out);
     level = 0.22 * rainLevel();
+  } else if (id === 'dawn') {
+    // Next shore: the dawn loop, softened at the top, with a little room under it.
+    const song = loopSource(bake('dawn', (60 / 84) * 16, dawn), 0);
+    stops.push(song);
+    chain(song, filter('lowpass', 3600, 0.5), gain(0.8), out);
+    level = 0.18;
   } else {
     // Near silence: a soft open-fifth pad, filtered and slowly breathing.
     const pad = gain(0.0);
