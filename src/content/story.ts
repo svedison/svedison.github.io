@@ -198,6 +198,9 @@ export const PROLOGUE_CTA = {
 export const SHORE_COPY = {
   available: 'Available to start',
   hello: 'Say hello',
+  /** Under the button after a click: the address is on the clipboard (the mail app opens too, where there is one). */
+  copied: (email: string) => `${email} copied. Paste it into any mail app.`,
+  writeTo: (email: string) => `Write to ${email}.`,
   elsewhere: 'Elsewhere',
   logbook: 'Logbook',
   resume: 'Résumé (PDF)',

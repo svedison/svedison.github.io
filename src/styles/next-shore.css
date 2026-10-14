@@ -13,6 +13,17 @@ html.js .chapter--next {
   }
 }
 
+/* ---- "Say hello" answered: the address is on the clipboard */
+.shore__copied {
+  margin: 10px 0 0;
+  font: 400 12px/1.5 var(--font-mono);
+  letter-spacing: 0.04em;
+  color: var(--fg);
+}
+.shore__copied[hidden] {
+  display: none;
+}
+
 /* ---- look closer: the keyboard / touch mirror of the seed under glass */
 .shore__look {
   display: inline-flex;
