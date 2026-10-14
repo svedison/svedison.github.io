@@ -549,6 +549,21 @@ html.js[data-jy-walls]:not(.no-webgl) .chapter--river .seal {
 [data-place='left-high'] > .slot--hotspots { grid-column: 7 / -1 !important; grid-row: 1 !important; align-self: end; justify-self: stretch; justify-content: flex-end; }
 /* Workshop: the shelf index sits under the copy, left, so the 3D shelf keeps the centre and right */
 .chapter--workshop [data-place='left-high'] > .slot--hotspots { grid-column: 1 / span 7 !important; grid-row: 2 !important; justify-content: flex-start; }
+/* Laptop heights: the headline and body shrink so the copy and the shelf index (logbook-overlay.css) share the
+   pinned frame with room between them instead of the copy running into the chips */
+@media (max-height: 860px) and (min-width: 761px) {
+  .chapter--workshop .chapter__title {
+    font-size: clamp(2rem, 4.2vw, 3.5rem);
+  }
+  .chapter--workshop .chapter__body {
+    margin-top: 14px;
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  .chapter--workshop .chapter__copy .eyebrow {
+    margin-bottom: 10px;
+  }
+}
 [data-place='right-mid'] > .slot--hotspots { grid-column: 1 / span 6 !important; }
 
 /* The loop manifesto reads like a spoken line */
