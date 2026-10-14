@@ -25,6 +25,7 @@ const ALPHA = 0.6; // peak opacity of an ember
 const POOL = 24; // hard cap on what can be on screen at once
 // The lantern: one soft glow that follows the pointer on a lag and breathes for a moment after the hand rests.
 const GLOW_LAG = 9; // follow damping (a beat behind the hand, never jittering on it)
+const GLOW_OFF: [number, number] = [7.5, 15]; // px from the cursor hotspot to the lantern body (main.css cursor)
 const GLOW_SIZE = 0.05; // diameter incl. halo (x H)
 const GLOW_ALPHA = 0.55;
 const GLOW_BREATHE_FOR = 4; // s of breathing after the last move, then it holds steady and the loop sleeps
@@ -195,8 +196,8 @@ export function init(app: App): void {
     G.a = damp(G.a, want, want > G.a ? 6 : 10, dt);
     if (G.a < 0.004) G.a = 0;
     if (E.has) {
-      G.x = damp(G.x, E.px, GLOW_LAG, dt);
-      G.y = damp(G.y, E.py, GLOW_LAG, dt);
+      G.x = damp(G.x, E.px + GLOW_OFF[0], GLOW_LAG, dt);
+      G.y = damp(G.y, E.py + GLOW_OFF[1], GLOW_LAG, dt);
     }
 
     // Update + draw.
@@ -241,7 +242,7 @@ export function init(app: App): void {
     g!.globalAlpha = 1;
     alive = count;
 
-    const glowMoving = G.a > 0 && (Math.hypot(E.px - G.x, E.py - G.y) > 0.3 || E.still < GLOW_BREATHE_FOR);
+    const glowMoving = G.a > 0 && (Math.hypot(E.px + GLOW_OFF[0] - G.x, E.py + GLOW_OFF[1] - G.y) > 0.3 || E.still < GLOW_BREATHE_FOR);
     const glowFading = G.a > 0 && G.a < 0.999;
     if (alive > 0 || glowMoving || glowFading || (on && E.inside && Math.hypot(E.px - E.x, E.py - E.y) > 0.5)) wake();
     else if (G.a === 0) g!.clearRect(0, 0, W, H);
@@ -272,8 +273,10 @@ export function init(app: App): void {
       E.still = 0;
       if (!E.has) {
         E.has = true;
-        E.x = E.lx = G.x = E.px;
-        E.y = E.ly = G.y = E.py;
+        E.x = E.lx = E.px;
+        E.y = E.ly = E.py;
+        G.x = E.px + GLOW_OFF[0];
+        G.y = E.py + GLOW_OFF[1];
       }
       if (!enabled()) return;
       if (!raf) last = performance.now();

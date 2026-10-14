@@ -103,6 +103,15 @@ button {
   top: max(12px, env(safe-area-inset-top));
 }
 
+/* ------------------------------------------------------------------ the lantern cursor
+   A small paper lantern on a short pole, hung from the pointer's tip (hotspot 4,3). Fine pointers only; links,
+   buttons and the workshop's grab keep their native cursors so affordances stay legible. */
+@media (hover: hover) and (pointer: fine) {
+  html.js {
+    cursor: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%2232%22 height=%2232%22 viewBox=%220 0 32 32%22%3E%3Cpath d=%22M4 3L10 9%22 stroke=%22%232a2622%22 stroke-width=%222.6%22 stroke-linecap=%22round%22 fill=%22none%22/%3E%3Cpath d=%22M4 3L10 9%22 stroke=%22%23f3ede2%22 stroke-width=%221.1%22 stroke-linecap=%22round%22 fill=%22none%22/%3E%3Crect x=%228%22 y=%229%22 width=%227%22 height=%222.4%22 rx=%221%22 fill=%22%232a2622%22/%3E%3Crect x=%226.5%22 y=%2211.5%22 width=%2210%22 height=%2213%22 rx=%224.5%22 fill=%22%23f2a93b%22 stroke=%22%232a2622%22 stroke-width=%221.5%22/%3E%3Ccircle cx=%2211.5%22 cy=%2218%22 r=%222%22 fill=%22%23fff0cd%22/%3E%3Cpath d=%22M11.5 24.5V28%22 stroke=%22%232a2622%22 stroke-width=%221.5%22 stroke-linecap=%22round%22/%3E%3C/svg%3E") 4 3, auto;
+  }
+}
+
 /* ------------------------------------------------------------------ layers */
 #world {
   position: fixed;
