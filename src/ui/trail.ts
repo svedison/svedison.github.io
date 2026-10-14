@@ -1,6 +1,7 @@
-// Lantern-ember pointer trail (SPEC §6 "the pointer is the wind", pointer-trail-emitter).
-// A 2-D canvas above the mist veil and below #ui-root. Motes are emitted by DISTANCE along a lagged
-// emitter path (constant spacing at any hand speed), live in a fixed ring-buffer pool, coast, curl and rise.
+// Wind-trace pointer trail (SPEC §6 "the pointer is the wind", pointer-trail-emitter).
+// A 2-D canvas above the mist veil and below #ui-root. The pointer moves constantly, so this stays at a
+// whisper: a few small embers, emitted by DISTANCE along a lagged emitter path and only while the hand is
+// actually sweeping (a slow hover over copy draws nothing), never over links or buttons, never while still.
 // Off for coarse pointers, reduced motion, open overlays and hidden tabs; the RAF sleeps when nothing is alive.
 // Pointer motion also feeds bus 'ripple' (NDC, ~20 Hz) for the water modules, on every pointer type.
 import type { App } from '../app';
@@ -8,21 +9,20 @@ import { bus } from '../bus';
 
 // pointer-trail-emitter numbers, translated from its 2.2-unit plane to the viewport height H.
 const PLANE = 2.2;
-const STEP = 0.03 / PLANE; // emission step (x H)
-const CAP = 14; // spawns per frame (teleport guard)
+const STEP = 0.2 / PLANE; // emission step (x H): one ember per ~9% of the viewport height, not a spray
+const CAP = 2; // spawns per frame (teleport guard)
 const LAG = 16; // emitter damping
+const SWEEP = 0.5 / PLANE; // emitter speed (x H / s) below which the hand is hovering, not sweeping: no embers
 const SCATTER = 0.05 / PLANE; // spawn scatter (x H). Tighter than the wisp default: embers hug the lantern's path.
-const LIFE: [number, number] = [1.45, 2.75];
-const IDLE_LIFE: [number, number] = [2.1, 3.4];
+const LIFE: [number, number] = [0.7, 1.15];
 const LAUNCH_BACK = 0.09 / PLANE; // against travel (x H / s)
-const LAUNCH_SIDE = 0.19 / PLANE; // lateral (x H / s)
-const COAST = 0.5; // velocity *= 1 - COAST * dt
+const LAUNCH_SIDE = 0.12 / PLANE; // lateral (x H / s)
+const COAST = 0.9; // velocity *= 1 - COAST * dt
 const BUOY = 0.022 / PLANE; // rise (x H / s^2)
-const CURL: [number, number] = [0.17 / PLANE, 0.14 / PLANE];
-const SIZE: [number, number] = [0.018 / PLANE, 0.05 / PLANE]; // diameter (x H)
-const POOL = 190;
-const IDLE_EVERY = 0.42; // s
-const IDLE_FOR = 3.5; // s of idle breath after the hand stops, then the loop may sleep
+const CURL: [number, number] = [0.12 / PLANE, 0.1 / PLANE];
+const SIZE: [number, number] = [0.012 / PLANE, 0.03 / PLANE]; // diameter (x H)
+const ALPHA = 0.6; // peak opacity of an ember
+const POOL = 24; // hard cap on what can be on screen at once
 const RIPPLE_MS = 50;
 
 interface Mote {
@@ -119,13 +119,14 @@ export function init(app: App): void {
   window.addEventListener('resize', resize, { passive: true });
 
   // Emitter state (lagged behind the pointer).
-  const E = { x: 0, y: 0, lx: 0, ly: 0, acc: 0, px: 0, py: 0, has: false, inside: false, still: 0, idle: 0 };
+  const E = { x: 0, y: 0, lx: 0, ly: 0, acc: 0, px: 0, py: 0, has: false, inside: false, overUI: false };
+  const UI = 'a, button, input, textarea, select, [role="button"], [role="dialog"]';
 
   const overlays = new Set<string>();
   let eggOpen = document.documentElement.classList.contains('egg-open');
   const enabled = () => fine.matches && overlays.size === 0 && !eggOpen && !document.hidden;
 
-  function spawn(x: number, y: number, ux: number, uy: number, idle: boolean) {
+  function spawn(x: number, y: number, ux: number, uy: number) {
     const i = slot; // take the slot BEFORE advancing it (ring-buffer ordering trap)
     slot = (slot + 1) % POOL;
     const m = pool[i];
@@ -138,7 +139,7 @@ export function init(app: App): void {
     m.vx = -ux * back + -uy * side;
     m.vy = -uy * back + ux * side;
     m.age = 0;
-    m.life = idle ? rand(...IDLE_LIFE) : rand(...LIFE);
+    m.life = rand(...LIFE);
     m.size = rand(SIZE[0], SIZE[1]) * H;
     m.phase = Math.random() * Math.PI * 2;
   }
@@ -164,26 +165,21 @@ export function init(app: App): void {
       const dy = E.y - E.ly;
       const moved = Math.hypot(dx, dy);
       const step = STEP * H;
-      const ux = moved > 1e-6 ? dx / moved : 0;
-      const uy = moved > 1e-6 ? dy / moved : -1;
-      E.acc += moved;
-      let n = 0;
-      while (E.acc >= step && n < CAP) {
-        n++;
-        E.acc -= step;
-        const t = moved > 1e-6 ? Math.min(1, (n * step) / moved) : 0; // place each mote where it is owed
-        spawn(E.lx + dx * t, E.ly + dy * t, ux, uy, false);
-      }
-      if (E.acc > step) E.acc = 0; // drop a teleport's leftover instead of paying it next frame
-      if (moved > 0.5) E.still = 0;
-      else E.still += dt;
-      // Idle breath: rare, and only for a few seconds after the hand stops so the loop can sleep.
-      if (E.still > 0 && E.still < IDLE_FOR) {
-        E.idle += dt;
-        if (E.idle >= IDLE_EVERY) {
-          E.idle = 0;
-          spawn(E.x, E.y, 0, -1, true);
+      const sweeping = dt > 0 && moved / dt > SWEEP * H && !E.overUI;
+      if (sweeping) {
+        const ux = dx / moved;
+        const uy = dy / moved;
+        E.acc += moved;
+        let n = 0;
+        while (E.acc >= step && n < CAP) {
+          n++;
+          E.acc -= step;
+          const t = Math.min(1, (n * step) / moved); // place each mote where it is owed
+          spawn(E.lx + dx * t, E.ly + dy * t, ux, uy);
         }
+        if (E.acc > step) E.acc = 0; // drop a teleport's leftover instead of paying it next frame
+      } else {
+        E.acc = 0; // a hover or a pause owes nothing: the next sweep starts clean
       }
     }
 
@@ -209,7 +205,7 @@ export function init(app: App): void {
       m.vy = m.vy * coast + Math.cos(time * 1.1 + 1.7 * m.phase) * CURL[1] * H * dt - buoy;
       m.x += m.vx * dt;
       m.y += m.vy * dt;
-      const a = (u < 0.12 ? u / 0.12 : u > 0.22 ? 1 - (u - 0.22) / 0.78 : 1) * 0.9;
+      const a = (u < 0.12 ? u / 0.12 : u > 0.22 ? 1 - (u - 0.22) / 0.78 : 1) * ALPHA;
       if (a <= 0.003) continue;
       const d = m.size * (1 + 0.55 * u) * 2.2; // sprite includes the halo
       const h = d / 2;
@@ -222,8 +218,7 @@ export function init(app: App): void {
     g!.globalAlpha = 1;
     alive = count;
 
-    const breathing = on && E.has && E.inside && E.still < IDLE_FOR;
-    if (alive > 0 || breathing || (on && E.inside && Math.hypot(E.px - E.x, E.py - E.y) > 0.5)) wake();
+    if (alive > 0 || (on && E.inside && Math.hypot(E.px - E.x, E.py - E.y) > 0.5)) wake();
     else g!.clearRect(0, 0, W, H);
   }
 
@@ -247,7 +242,7 @@ export function init(app: App): void {
       E.px = e.clientX;
       E.py = e.clientY;
       E.inside = true;
-      E.still = 0;
+      E.overUI = e.target instanceof Element && !!e.target.closest(UI);
       if (!E.has) {
         E.has = true;
         E.x = E.lx = E.px;
