@@ -72,7 +72,7 @@ export const CHAPTERS: Chapter[] = [
     seal: '江阴',
     title: 'The long way here.',
     body: [
-      'Jiayi Zhu. Born beside the Yangtze, studying math in Seattle, graduating June 2027. This is how I got here. Take the boat.',
+      'Jiayi Zhu. Born beside the Yangtze, studying math + CS in Seattle, graduating June 2027. This is how I got here. Take the boat.',
     ],
     coords: '31.92° N · 120.27° E',
     station: 'jiangyin',
