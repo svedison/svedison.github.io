@@ -181,7 +181,7 @@ html.js .chapter:not(.chapter--next) .chapter__pin {
 html.js .chapter--prologue .chapter__pin {
   opacity: 1;
 }
-html.js .chapter__pin:not(.is-active) > * {
+html.js .chapter__pin.is-staged:not(.is-active) > * {
   pointer-events: none;
 }
 html.js .chapter__copy .coords {
